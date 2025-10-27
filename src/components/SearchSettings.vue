@@ -2,6 +2,8 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import IndustryModal from './IndustryModal.vue'
 import IndustryTags from './IndustryTags.vue'
+import ExcludeWordsTags from './ExcludeWordsTags.vue'
+import KeywordsTags from './KeywordsTags.vue'
 
 const keywords = ref('')
 const searchInTitle = ref(true)
@@ -45,6 +47,14 @@ const handleOpenModal = () => {
 
 const handleCloseModal = () => {
   isModalOpen.value = false
+}
+
+const handleUpdateKeywords = (words: string) => {
+  keywords.value = words
+}
+
+const handleUpdateExcludeWords = (words: string) => {
+  excludeWords.value = words
 }
 
 const handleUpdateSelectedIndustries = (industries: string[]) => {
@@ -121,16 +131,10 @@ onUnmounted(() => {
               </p>
             </div>
             <div class="form-control-section">
-              <input 
-                v-model="keywords"
-                type="text" 
-                class="form-input" 
-                placeholder="Ключевые слова, через запятую"
+              <KeywordsTags 
+                :keywords="keywords"
+                @update:keywords="handleUpdateKeywords"
               />
-              <div class="form-example">
-                <span class="example-first">например,</span>
-                <span class="example-second"> специалист по тестированию</span>
-              </div>
               <div class="checkbox-group">
                 <div class="checkbox-label-text">Искать</div>
                 <label class="checkbox-label">
@@ -164,11 +168,9 @@ onUnmounted(() => {
               </p>
             </div>
             <div class="form-control-section">
-              <input 
-                v-model="excludeWords"
-                type="text" 
-                class="form-input" 
-                placeholder="Исключить слова, через запятую"
+              <ExcludeWordsTags 
+                :exclude-words="excludeWords"
+                @update:exclude-words="handleUpdateExcludeWords"
               />
             </div>
           </div>
@@ -259,7 +261,6 @@ onUnmounted(() => {
             Сохранить
           </button>
           <button @click="handleFindVacancies" class="find-btn">
-            <img src="/src/assets/img/dashboard.png" alt="Find" class="btn-icon" />
             Найдено вакансий:
           </button>
         </div>
@@ -283,11 +284,30 @@ onUnmounted(() => {
   flex: 1;
   padding: 40px;
   background: $bg-gray;
-  height: 100vh;
+  overflow-y: auto;
+  
+  // Стилизация скроллбара для всей страницы
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
 
   .settings-container {
     margin: 0 auto;
-    height: 100%;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
 

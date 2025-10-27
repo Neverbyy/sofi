@@ -1,19 +1,43 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import NotificationsDropdown from './NotificationsDropdown.vue'
 
 const isDropdownOpen = ref(false)
+const isNotificationsOpen = ref(false)
 
 const handleDropdownToggle = () => {
   isDropdownOpen.value = !isDropdownOpen.value
+  // Закрываем уведомления при открытии пользовательского меню
+  if (isDropdownOpen.value) {
+    isNotificationsOpen.value = false
+  }
+}
+
+const handleNotificationsToggle = () => {
+  isNotificationsOpen.value = !isNotificationsOpen.value
+  // Закрываем пользовательское меню при открытии уведомлений
+  if (isNotificationsOpen.value) {
+    isDropdownOpen.value = false
+  }
+}
+
+const handleCloseNotifications = () => {
+  isNotificationsOpen.value = false
 }
 
 const handleClickOutside = (event: Event) => {
   const target = event.target as HTMLElement
   const userInfo = target.closest('.user-info')
   const dropdownMenu = target.closest('.dropdown-menu')
+  const notifications = target.closest('.notifications')
+  const notificationsDropdown = target.closest('.notifications-dropdown')
   
   if (!userInfo && !dropdownMenu) {
     isDropdownOpen.value = false
+  }
+  
+  if (!notifications && !notificationsDropdown) {
+    isNotificationsOpen.value = false
   }
 }
 
@@ -33,7 +57,7 @@ onUnmounted(() => {
     </div>
     
     <div class="header-right">
-      <div class="notifications">
+      <div class="notifications" @click="handleNotificationsToggle">
         <img src="/src/assets/img/notification.png" alt="Notifications" class="notification-icon" />
         <div class="notification-dot"></div>
       </div>
@@ -54,7 +78,11 @@ onUnmounted(() => {
         />
       </div>
 
-      <!-- Dropdown menu -->
+      <!-- Notifications dropdown -->
+      <NotificationsDropdown 
+        :is-open="isNotificationsOpen"
+        @close="handleCloseNotifications"
+      />
       <div class="dropdown-menu" :class="{ open: isDropdownOpen }">
         <div class="dropdown-item">
           <img src="/src/assets/img/user.png" alt="Profile" class="dropdown-icon" />
@@ -114,6 +142,11 @@ onUnmounted(() => {
       cursor: pointer;
       border: 1px solid transparent;
       transition: all .3s ease;
+
+      &:hover {
+        background-color: #e8e8e8;
+        border-color: $primary-blue;
+      }
 
       .notification-icon {
         width: $icon-md;
