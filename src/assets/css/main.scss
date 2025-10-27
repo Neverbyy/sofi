@@ -1,0 +1,66 @@
+// Импорт переменных
+@use 'variables' as *;
+
+// Импорт нормализующих стилей
+@use 'normalize';
+
+// Дополнительные переменные
+$primary-font: 'Wix Madefor Display', sans-serif;
+$primary-color: #333;
+$focus-color: #007acc;
+$scrollbar-width: 8px;
+$scrollbar-track-color: #f1f1f1;
+$scrollbar-thumb-color: #c1c1c1;
+$scrollbar-thumb-hover-color: #a8a8a8;
+
+// Миксины
+@mixin focus-visible {
+  outline: 2px solid $focus-color;
+  outline-offset: 2px;
+}
+
+@mixin scrollbar-styles {
+  &::-webkit-scrollbar {
+    width: $scrollbar-width;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $scrollbar-track-color;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $scrollbar-thumb-color;
+    border-radius: 4px;
+
+    &:hover {
+      background: $scrollbar-thumb-hover-color;
+    }
+  }
+}
+
+// Основные стили
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  line-height: 1.6;
+  color: $primary-color;
+  font-family: $primary-font;
+  margin: 0;
+  padding: 0;
+}
+
+// Улучшенный focus для клавиатурной навигации
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  @include focus-visible;
+}
+
+// Применяем стили скроллбара ко всем элементам
+* {
+  @include scrollbar-styles;
+}
