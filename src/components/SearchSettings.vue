@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import IndustryModal from './IndustryModal.vue'
+import IndustryTags from './IndustryTags.vue'
 
 const keywords = ref('')
 const searchInTitle = ref(true)
@@ -16,6 +18,7 @@ const selectedIndustries = ref([
 ])
 const experienceLevel = ref('')
 const isSelectOpen = ref(false)
+const isModalOpen = ref(false)
 
 const handleSave = () => {
   console.log('Saving settings...')
@@ -25,15 +28,27 @@ const handleFindVacancies = () => {
   console.log('Finding vacancies...')
 }
 
-const removeIndustry = (industry: string) => {
+const handleRemoveIndustry = (industry: string) => {
   const index = selectedIndustries.value.indexOf(industry)
   if (index > -1) {
     selectedIndustries.value.splice(index, 1)
   }
 }
 
-const clearAllIndustries = () => {
+const handleClearAllIndustries = () => {
   selectedIndustries.value = []
+}
+
+const handleOpenModal = () => {
+  isModalOpen.value = true
+}
+
+const handleCloseModal = () => {
+  isModalOpen.value = false
+}
+
+const handleUpdateSelectedIndustries = (industries: string[]) => {
+  selectedIndustries.value = industries
 }
 
 const handleSelectToggle = () => {
@@ -164,35 +179,12 @@ onUnmounted(() => {
               <label class="form-label">Отрасль компании</label>
             </div>
             <div class="form-control-section">
-              <p class="form-description">
-                Вы выбрали
-                <div class="form-description__subtitle">
-                  <span class="industries-count">{{ selectedIndustries.length }} отраслей</span>
-                <img 
-                  v-if="selectedIndustries.length > 0"
-                  src="/src/assets/img/close.png" 
-                  alt="Clear all" 
-                  class="clear-all-icon"
-                  @click="clearAllIndustries"
-                />
-                </div>
-              </p>
-              <div class="selected-industries">
-                <span 
-                  v-for="industry in selectedIndustries" 
-                  :key="industry"
-                  class="industry-tag"
-                >
-                  {{ industry }}
-                  <img 
-                    src="/src/assets/img/close.png" 
-                    alt="Remove" 
-                    class="remove-icon"
-                    @click="removeIndustry(industry)"
-                  />
-                </span>
-              </div>
-              <a href="#" class="change-link">Изменить отрасли</a>
+              <IndustryTags 
+                :selected-industries="selectedIndustries"
+                @remove-industry="handleRemoveIndustry"
+                @clear-all="handleClearAllIndustries"
+              />
+              <a href="#" class="change-link" @click.prevent="handleOpenModal">Изменить отрасли</a>
             </div>
           </div>
 
@@ -273,6 +265,14 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Modal for industry selection -->
+    <IndustryModal 
+      :is-open="isModalOpen"
+      :selected-industries="selectedIndustries"
+      @close="handleCloseModal"
+      @update:selected-industries="handleUpdateSelectedIndustries"
+    />
   </main>
 </template>
 
@@ -528,6 +528,7 @@ onUnmounted(() => {
             cursor: pointer;
             font-size: $font-sm;
             color: $text-gray;
+            width: fit-content;
 
             .checkbox-input {
               display: none;
@@ -562,34 +563,6 @@ onUnmounted(() => {
           }
         }
 
-        .selected-industries {
-          display: flex;
-          flex-wrap: wrap;
-          gap: $spacing-sm;
-          margin-bottom: $spacing-lg;
-
-          .industry-tag {
-            display: flex;
-            align-items: center;
-            gap: $spacing-sm;
-            padding: $spacing-sm $spacing-md;
-            background: $light-gray;
-            border-radius: $border-radius-xl;
-            font-size: $font-sm;
-            color: $text-gray;
-
-            .remove-icon {
-              width: $icon-sm;
-              height: $icon-sm;
-              cursor: pointer;
-              opacity: 0.6;
-
-              &:hover {
-                opacity: 1;
-              }
-            }
-          }
-        }
 
         .change-link {
           color: $primary-blue;
@@ -687,4 +660,5 @@ onUnmounted(() => {
     }
   }
 }
+
 </style>
