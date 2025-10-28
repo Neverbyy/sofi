@@ -1,7 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-const activeItem = ref('positions')
+interface Props {
+  isMobileMenuOpen?: boolean
+}
+
+interface Emits {
+  (e: 'close-mobile-menu'): void
+}
+
+withDefaults(defineProps<Props>(), {
+  isMobileMenuOpen: false
+})
+
+const emit = defineEmits<Emits>()
+
+const activeItem = ref('responses')
 const isCollapsed = ref(false)
 
 const menuItems = [
@@ -37,9 +51,10 @@ const getIconSvg = (iconName: string) => {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ collapsed: isCollapsed }">
-    <!-- Collapse button -->
-    <button class="collapse-btn" @click="handleCollapseToggle">
+  <aside class="sidebar" :class="{ collapsed: isCollapsed, 'mobile-menu-open': isMobileMenuOpen }">
+
+    <!-- Collapse button (desktop only) -->
+    <button class="collapse-btn desktop-only" @click="handleCollapseToggle">
       <img 
         src="/src/assets/img/left-arrow.png" 
         alt="Collapse" 
@@ -74,15 +89,29 @@ const getIconSvg = (iconName: string) => {
       </div>
     </div>
 
+    <!-- Mobile user info -->
+    <div class="mobile-user-info" v-if="isMobileMenuOpen">
+      <div class="user-avatar">
+        <img src="/src/assets/img/user.png" alt="User" />
+      </div>
+      <div class="user-details">
+        <div class="user-name">Артём</div>
+        <div class="user-logout">Выйти из HH.ru</div>
+      </div>
+    </div>
+
     <!-- Bottom buttons -->
     <div class="bottom-buttons">
       <button class="bottom-btn">
-        <span v-if="!isCollapsed">Инструкция</span>
         <img src="/src/assets/img/instr.png" alt="Instructions" class="btn-icon" />
+        <span v-if="!isCollapsed && !isMobileMenuOpen">Инструкция</span>
       </button>
       <button class="bottom-btn">
-        <span v-if="!isCollapsed">Поддержка</span>
         <img src="/src/assets/img/support.png" alt="Support" class="btn-icon" />
+        <span v-if="!isCollapsed && !isMobileMenuOpen">Поддержка</span>
+      </button>
+      <button class="bottom-btn mobile-only" v-if="isMobileMenuOpen">
+        <svg data-v-fa3d55be="" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path data-v-fa3d55be="" d="M11.4668 18.3057H3.99168C3.5332 18.3057 3.16113 17.9336 3.16113 17.4751V2.52492C3.16113 2.06645 3.53324 1.69438 3.99168 1.69438H11.4668C11.9261 1.69438 12.2973 1.32313 12.2973 0.863828C12.2973 0.404531 11.9261 0.0332031 11.4668 0.0332031H3.99168C2.61793 0.0332031 1.5 1.15117 1.5 2.52492V17.4751C1.5 18.8488 2.61793 19.9668 3.99168 19.9668H11.4668C11.9261 19.9668 12.2973 19.5955 12.2973 19.1362C12.2973 18.6769 11.9261 18.3057 11.4668 18.3057Z" fill="#131313"></path><path data-v-fa3d55be="" d="M18.2525 9.40855L13.2027 4.42515C12.8771 4.10288 12.3505 4.10706 12.0282 4.43347C11.706 4.75988 11.7093 5.28562 12.0366 5.60788L15.6454 9.16933H5.97508C5.51578 9.16933 5.14453 9.54058 5.14453 9.99988C5.14453 10.4592 5.51578 10.8305 5.97508 10.8305H15.6454L12.0366 14.3919C11.7093 14.7142 11.7068 15.2399 12.0282 15.5663C12.1055 15.6447 12.1976 15.707 12.2991 15.7494C12.4006 15.7919 12.5096 15.8138 12.6196 15.8138C12.8306 15.8138 13.0415 15.7341 13.2027 15.5746L18.2525 10.5912C18.3308 10.5139 18.393 10.4218 18.4355 10.3203C18.478 10.2188 18.4999 10.1099 18.5 9.99984C18.5 9.77734 18.4111 9.56554 18.2525 9.40855Z" fill="#131313"></path></svg>
       </button>
     </div>
   </aside>
@@ -99,6 +128,26 @@ const getIconSvg = (iconName: string) => {
   padding: 40px 0;
   transition: width 0.3s ease;
   overflow: hidden;
+
+  // Mobile styles - hide sidebar by default, show as fullscreen when open
+  @media (max-width: 560px) {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    padding: 0;
+    background: $white;
+    overflow: hidden; // Убираем скролл
+
+    &.mobile-menu-open {
+      display: flex;
+    }
+  }
 
   &.collapsed {
     width: $sidebar-collapsed-width;
@@ -118,6 +167,11 @@ const getIconSvg = (iconName: string) => {
     margin-bottom: 30px;
     margin-left: 27px;
     transition: all 0.3s ease;
+
+    // Hide on mobile devices
+    @media (max-width: 560px) {
+      display: none !important;
+    }
 
     &:hover {
       background: #e5e7eb;
@@ -142,9 +196,65 @@ const getIconSvg = (iconName: string) => {
     transform: rotate(180deg) translateX(2px);
   }
 
+
+  // Mobile user info styles
+  .mobile-user-info {
+    display: none;
+    padding: $spacing-lg;
+    background: $light-gray;
+    border-radius: 12px;
+    margin: $spacing-lg;
+    align-items: center;
+    gap: $spacing-md;
+
+    @media (max-width: 560px) {
+      display: flex;
+      margin: 0 $spacing-lg $spacing-lg $spacing-lg;
+    }
+
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      background: $white;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      img {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .user-name {
+        font-weight: 600;
+        font-size: $font-md;
+        color: $text-primary;
+      }
+
+      .user-logout {
+        font-size: $font-sm;
+        color: $text-secondary;
+      }
+    }
+  }
+
   .nav-menu {
     flex: 1;
     padding: 0 $spacing-xl;
+    overflow: hidden; // Убираем скролл в навигационном меню
+
+    // Mobile styles
+    @media (max-width: 560px) {
+      padding: $spacing-lg;
+      overflow: visible; // На мобильных устройствах разрешаем видимость
+    }
 
     .nav-list {
       list-style: none;
@@ -184,6 +294,13 @@ const getIconSvg = (iconName: string) => {
             width: $spacing-sm;
             background: $primary-blue;
             border-radius: 0 6px 6px 0;
+          }
+
+          // Mobile styles for active indicator
+          @media (max-width: 560px) {
+            &::before {
+              left: -$spacing-lg; // Adjust for mobile padding
+            }
           }
         }
 
@@ -247,6 +364,11 @@ const getIconSvg = (iconName: string) => {
     border-radius: $spacing-md;
     transition: opacity 0.3s ease;
 
+    // Hide on mobile devices
+    @media (max-width: 560px) {
+      display: none;
+    }
+
     .responses-info {
       display: flex;
       align-items: center;
@@ -281,6 +403,14 @@ const getIconSvg = (iconName: string) => {
     flex-direction: column;
     gap: 20px;
 
+    // Mobile styles - horizontal layout with icons only
+    @media (max-width: 560px) {
+      flex-direction: row;
+      justify-content: center;
+      gap: $spacing-md;
+      padding: $spacing-lg;
+    }
+
     .bottom-btn {
       display: flex;
       align-items: center;
@@ -296,6 +426,15 @@ const getIconSvg = (iconName: string) => {
       font-size: $font-md;
       color: $text-gray;
 
+      // Mobile styles - square buttons with icons only
+      @media (max-width: 560px) {
+        width: 100%;
+        height: 52px;
+        padding: 0;
+        gap: 0;
+        border-radius: 12px;
+      }
+
       &:hover {
         background: #e5e7eb;
       }
@@ -305,6 +444,13 @@ const getIconSvg = (iconName: string) => {
         height: 20px;
         margin-right: $spacing-sm;
         flex-shrink: 0;
+
+        // Mobile styles - adjust icon size
+        @media (max-width: 560px) {
+          width: 24px;
+          height: 24px;
+          margin-right: 0;
+        }
       }
     }
   }

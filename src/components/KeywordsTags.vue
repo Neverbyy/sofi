@@ -76,7 +76,6 @@ const suggestions = ref([
   'Intern', 'Freelancer', 'Remote', 'Office', 'Hybrid',
   'Стажер', 'Фрилансер', 'Удаленно', 'Офис', 'Гибрид'
 ])
-
 // Парсим строку ключевых слов в массив
 const parseKeywords = (wordsString: string) => {
   return wordsString
@@ -377,6 +376,12 @@ const handleInputBlur = () => {
         flex-wrap: wrap;
         gap: $spacing-sm;
         padding-right: 8px;
+
+        // Mobile styles
+        @media (max-width: 560px) {
+          gap: $spacing-xs;
+          padding-right: 4px;
+        }
       }
 
       // Анимация для transition-group
@@ -409,11 +414,24 @@ const handleInputBlur = () => {
         font-size: $font-sm;
         color: $text-gray;
 
+        // Mobile styles
+        @media (max-width: 560px) {
+          padding: $spacing-xs $spacing-sm;
+          font-size: $font-xs;
+          gap: $spacing-xs;
+        }
+
         .remove-icon {
           width: $icon-sm;
           height: $icon-sm;
           cursor: pointer;
           opacity: 0.6;
+
+          // Mobile styles
+          @media (max-width: 560px) {
+            width: $icon-xs;
+            height: $icon-xs;
+          }
 
           &:hover {
             opacity: 1;

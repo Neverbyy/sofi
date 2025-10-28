@@ -2,8 +2,15 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import NotificationsDropdown from './NotificationsDropdown.vue'
 
+interface Emits {
+  (e: 'mobile-menu-toggle', isOpen: boolean): void
+}
+
+const emit = defineEmits<Emits>()
+
 const isDropdownOpen = ref(false)
 const isNotificationsOpen = ref(false)
+const isMobileMenuOpen = ref(false)
 
 const handleDropdownToggle = () => {
   isDropdownOpen.value = !isDropdownOpen.value
@@ -25,12 +32,26 @@ const handleCloseNotifications = () => {
   isNotificationsOpen.value = false
 }
 
+const handleMobileMenuToggle = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+  // Закрываем другие меню при открытии мобильного меню
+  if (isMobileMenuOpen.value) {
+    isDropdownOpen.value = false
+    isNotificationsOpen.value = false
+  }
+  // Эмитим событие для родительского компонента
+  emit('mobile-menu-toggle', isMobileMenuOpen.value)
+}
+
+
 const handleClickOutside = (event: Event) => {
   const target = event.target as HTMLElement
   const userInfo = target.closest('.user-info')
   const dropdownMenu = target.closest('.dropdown-menu')
   const notifications = target.closest('.notifications')
   const notificationsDropdown = target.closest('.notifications-dropdown')
+  const mobileMenu = target.closest('.mobile-menu')
+  const burgerMenu = target.closest('.burger-menu')
   
   if (!userInfo && !dropdownMenu) {
     isDropdownOpen.value = false
@@ -38,6 +59,10 @@ const handleClickOutside = (event: Event) => {
   
   if (!notifications && !notificationsDropdown) {
     isNotificationsOpen.value = false
+  }
+
+  if (!mobileMenu && !burgerMenu) {
+    isMobileMenuOpen.value = false
   }
 }
 
@@ -53,7 +78,9 @@ onUnmounted(() => {
 <template>
   <header class="header">
     <div class="header-left">
-      <img src="/src/assets/img/logo.png" alt="Софи" class="logo" />
+      <div class="logo">
+        <img src="/src/assets/img/logo.png" alt="Софи" class="logo-image" />
+      </div>
     </div>
     
     <div class="header-right">
@@ -62,7 +89,8 @@ onUnmounted(() => {
         <div class="notification-dot"></div>
       </div>
       
-      <div class="user-info" @click="handleDropdownToggle">
+      <!-- Desktop user info -->
+      <div class="user-info desktop-only" @click="handleDropdownToggle">
         <div class="user-icon">
           <img src="/src/assets/img/user.png" alt="User" class="user-avatar" />
         </div>
@@ -76,6 +104,20 @@ onUnmounted(() => {
           class="dropdown-icon"
           :class="{ rotated: isDropdownOpen }"
         />
+      </div>
+
+      <!-- Mobile burger menu -->
+      <div class="burger-menu mobile-only" @click="handleMobileMenuToggle" v-if="!isMobileMenuOpen">
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14.5625 2.0625H1.4375C0.90625 2.0625 0.5 1.65625 0.5 1.125C0.5 0.59375 0.90625 0.1875 1.4375 0.1875H14.5625C15.0938 0.1875 15.5 0.59375 15.5 1.125C15.5 1.65625 15.0938 2.0625 14.5625 2.0625ZM14.5625 6.4375H1.4375C0.90625 6.4375 0.5 6.03125 0.5 5.5C0.5 4.96875 0.90625 4.5625 1.4375 4.5625H14.5625C15.0938 4.5625 15.5 4.96875 15.5 5.5C15.5 6.03125 15.0938 6.4375 14.5625 6.4375ZM14.5625 10.8125H1.4375C0.90625 10.8125 0.5 10.4062 0.5 9.875C0.5 9.34375 0.90625 8.9375 1.4375 8.9375H14.5625C15.0938 8.9375 15.5 9.34375 15.5 9.875C15.5 10.4062 15.0938 10.8125 14.5625 10.8125Z" fill="#131313"></path>
+        </svg>
+      </div>
+
+      <!-- Mobile close button -->
+      <div class="mobile-close-btn mobile-only" @click="handleMobileMenuToggle" v-if="isMobileMenuOpen">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
 
       <!-- Notifications dropdown -->
@@ -114,13 +156,24 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 10;
+  z-index: 1002; // Выше чем мобильное меню
   position: relative;
+
+  // Mobile styles
+  @media (max-width: 560px) {
+    padding: $spacing-md $spacing-lg;
+    z-index: 1002; // Убеждаемся что хедер поверх мобильного меню
+  }
 
   .header-left {
     display: flex;
     align-items: center;
 
+    .logo {
+      display: flex;
+      align-items: center;
+
+    }
   }
 
   .header-right {
@@ -129,6 +182,12 @@ onUnmounted(() => {
     gap: 4px;
     margin-right: 10px;
     position: relative;
+
+    // Mobile styles
+    @media (max-width: 560px) {
+      gap: 8px;
+      margin-right: 0;
+    }
 
     .notifications {
       position: relative;
@@ -143,6 +202,14 @@ onUnmounted(() => {
       cursor: pointer;
       border: 1px solid transparent;
       transition: all .3s ease;
+      z-index: 1001; // Убеждаемся что колокольчик всегда видим
+
+      // Mobile styles - всегда видим
+      @media (max-width: 560px) {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
 
       &:hover {
         background-color: #e8e8e8;
@@ -208,7 +275,7 @@ onUnmounted(() => {
         .user-name {
           font-weight: 600;
           font-size: $font-lg;
-          color: $text-primary;
+          color: #222;
           line-height: 1.2;
         }
 
@@ -271,6 +338,66 @@ onUnmounted(() => {
           opacity: 0.7;
         }
       }
+    }
+
+    .burger-menu {
+      display: none;
+      cursor: pointer;
+      background-color: #f3f3f3;
+      border-radius: 12px;
+      width: 50px;
+      height: 50px;
+      border: 1px solid transparent;
+      transition: all 0.3s ease;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background-color: #e8e8e8;
+        border-color: $primary-blue;
+      }
+
+      @media (max-width: 560px) {
+        display: flex;
+      }
+    }
+
+    .mobile-close-btn {
+      display: none;
+      cursor: pointer;
+      background-color: #f3f3f3;
+      border-radius: 12px;
+      width: 50px;
+      height: 50px;
+      border: 1px solid transparent;
+      transition: all 0.3s ease;
+      align-items: center;
+      justify-content: center;
+      color: $text-primary;
+
+      &:hover {
+        background-color: #e8e8e8;
+        border-color: $primary-blue;
+      }
+
+      @media (max-width: 560px) {
+        display: flex;
+      }
+    }
+  }
+
+  // Utility classes for responsive visibility
+  .desktop-only {
+    @media (max-width: 560px) {
+      display: none !important;
+    }
+  }
+
+  .mobile-only {
+    display: none;
+    
+    @media (max-width: 560px) {
+      display: flex;
     }
   }
 }

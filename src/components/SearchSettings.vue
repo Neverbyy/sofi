@@ -179,6 +179,7 @@ onUnmounted(() => {
           <div class="form-group">
             <div class="form-label-section">
               <label class="form-label">Отрасль компании</label>
+              <p class="form-description optional">необязательно</p>
             </div>
             <div class="form-control-section">
               <IndustryTags 
@@ -190,10 +191,32 @@ onUnmounted(() => {
             </div>
           </div>
 
+          <!-- Excluded companies -->
+          <div class="form-group">
+            <div class="form-label-section">
+              <label class="form-label">Компании-исключения</label>
+              <p class="form-description optional">необязательно</p>
+            </div>
+            <div class="form-control-section">
+              <div class="select-wrapper">
+                <div class="custom-select">
+                  <span class="select-text">Выберите компании для исключения</span>
+                  <img 
+                    src="/src/assets/img/arrow.png" 
+                    alt="Dropdown" 
+                    class="select-arrow"
+                  />
+                </div>
+              </div>
+              <p class="form-description">Софи не будет откликаться на вакансии этих компаний</p>
+            </div>
+          </div>
+
           <!-- Work experience -->
           <div class="form-group">
             <div class="form-label-section">
               <label class="form-label">Опыт работы</label>
+              <p class="form-description optional">необязательно</p>
             </div>
             <div class="form-control-section">
               <div class="select-wrapper">
@@ -286,6 +309,12 @@ onUnmounted(() => {
   background: $bg-gray;
   overflow-y: auto;
   
+  // Mobile styles
+  @media (max-width: 560px) {
+    padding: 0;
+    background: $white;
+  }
+  
   // Стилизация скроллбара для всей страницы
   &::-webkit-scrollbar {
     width: 8px;
@@ -318,10 +347,25 @@ onUnmounted(() => {
       margin-bottom: $spacing-lg;
       flex-shrink: 0;
 
+      // Mobile styles
+      @media (max-width: 560px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: $spacing-md;
+        padding: $spacing-lg;
+        background: #f8f9fa;
+      }
+
       .header-left {
         display: flex;
         align-items: center;
         gap: $spacing-lg;
+
+        // Mobile styles
+        @media (max-width: 560px) {
+          gap: $spacing-md;
+        }
 
         .back-icon {
           width: 50px;
@@ -354,6 +398,11 @@ onUnmounted(() => {
           font-weight: 700;
           color: $text-primary;
           margin: 0;
+
+          // Mobile styles
+          @media (max-width: 560px) {
+            font-size: $font-lg;
+          }
         }
       }
 
@@ -394,6 +443,16 @@ onUnmounted(() => {
       gap: $spacing-xl;
       align-items: start;
 
+      // Mobile styles
+      @media (max-width: 560px) {
+        padding: $spacing-lg;
+        border-radius: 0;
+        box-shadow: none;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-lg;
+      }
+
       .form-content {
         .form-group {
           display: grid;
@@ -402,12 +461,26 @@ onUnmounted(() => {
           margin-bottom: 40px;
           align-items: start;
 
+          // Mobile styles
+          @media (max-width: 560px) {
+            display: flex;
+            flex-direction: column;
+            gap: $spacing-md;
+            margin-bottom: $spacing-xl;
+          }
+
           &:last-child {
             margin-bottom: 0;
           }
 
           .form-label-section {
             width: 250px;
+
+            // Mobile styles
+            @media (max-width: 560px) {
+              width: 100%;
+            }
+
             .form-label {
               display: block;
               font-weight: 600;
@@ -420,11 +493,20 @@ onUnmounted(() => {
               color: $text-secondary;
               margin: 0;
 
+              &.optional {
+                font-style: italic;
+                margin-top: 4px;
+              }
             }
           }
 
           .form-control-section {
             width: 500px;
+
+            // Mobile styles
+            @media (max-width: 560px) {
+              width: 100%;
+            }
             .form-description {
               font-size: $font-sm;
               color: $text-secondary;
@@ -465,6 +547,13 @@ onUnmounted(() => {
         gap: $spacing-sm;
         justify-content: flex-start;
 
+        // Mobile styles
+        @media (max-width: 560px) {
+          width: 100%;
+          gap: $spacing-md;
+          margin-top: $spacing-lg;
+        }
+
         .save-btn {
           display: flex;
           align-items: center;
@@ -478,6 +567,13 @@ onUnmounted(() => {
           font-weight: 500;
           cursor: pointer;
           transition: background-color $transition-fast;
+
+          // Mobile styles
+          @media (max-width: 560px) {
+            padding: $spacing-lg $spacing-xl;
+            font-size: $font-md;
+            justify-content: center;
+          }
 
           &:hover {
             background: $dark-blue;
@@ -502,6 +598,13 @@ onUnmounted(() => {
           font-weight: 500;
           cursor: pointer;
           transition: background-color $transition-fast;
+
+          // Mobile styles
+          @media (max-width: 560px) {
+            padding: $spacing-lg $spacing-xl;
+            font-size: $font-md;
+            justify-content: center;
+          }
 
           &:hover {
             background: $hover-blue;
