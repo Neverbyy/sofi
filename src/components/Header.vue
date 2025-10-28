@@ -160,7 +160,7 @@ onUnmounted(() => {
   position: relative;
 
   // Mobile styles
-  @media (max-width: 560px) {
+  @media (max-width: 650px) {
     padding: $spacing-md $spacing-lg;
     z-index: 1002; // Убеждаемся что хедер поверх мобильного меню
   }
@@ -184,7 +184,7 @@ onUnmounted(() => {
     position: relative;
 
     // Mobile styles
-    @media (max-width: 560px) {
+    @media (max-width: 650px) {
       gap: 8px;
       margin-right: 0;
     }
@@ -205,7 +205,7 @@ onUnmounted(() => {
       z-index: 1001; // Убеждаемся что колокольчик всегда видим
 
       // Mobile styles - всегда видим
-      @media (max-width: 560px) {
+      @media (max-width: 650px) {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -357,7 +357,7 @@ onUnmounted(() => {
         border-color: $primary-blue;
       }
 
-      @media (max-width: 560px) {
+      @media (max-width: 650px) {
         display: flex;
       }
     }
@@ -380,7 +380,7 @@ onUnmounted(() => {
         border-color: $primary-blue;
       }
 
-      @media (max-width: 560px) {
+      @media (max-width: 650px) {
         display: flex;
       }
     }
@@ -388,7 +388,7 @@ onUnmounted(() => {
 
   // Utility classes for responsive visibility
   .desktop-only {
-    @media (max-width: 560px) {
+    @media (max-width: 650px) {
       display: none !important;
     }
   }
@@ -396,7 +396,7 @@ onUnmounted(() => {
   .mobile-only {
     display: none;
     
-    @media (max-width: 560px) {
+    @media (max-width: 650px) {
       display: flex;
     }
   }

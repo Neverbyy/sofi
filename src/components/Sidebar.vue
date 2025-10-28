@@ -130,7 +130,7 @@ const getIconSvg = (iconName: string) => {
   overflow: hidden;
 
   // Mobile styles - hide sidebar by default, show as fullscreen when open
-  @media (max-width: 560px) {
+  @media (max-width: 650px) {
     display: none;
     position: fixed;
     top: 0;
@@ -169,7 +169,7 @@ const getIconSvg = (iconName: string) => {
     transition: all 0.3s ease;
 
     // Hide on mobile devices
-    @media (max-width: 560px) {
+    @media (max-width: 650px) {
       display: none !important;
     }
 
@@ -207,7 +207,7 @@ const getIconSvg = (iconName: string) => {
     align-items: center;
     gap: $spacing-md;
 
-    @media (max-width: 560px) {
+    @media (max-width: 650px) {
       display: flex;
       margin: 0 $spacing-lg $spacing-lg $spacing-lg;
     }
@@ -251,7 +251,7 @@ const getIconSvg = (iconName: string) => {
     overflow: hidden; // Убираем скролл в навигационном меню
 
     // Mobile styles
-    @media (max-width: 560px) {
+    @media (max-width: 650px) {
       padding: $spacing-lg;
       overflow: visible; // На мобильных устройствах разрешаем видимость
     }
@@ -297,7 +297,7 @@ const getIconSvg = (iconName: string) => {
           }
 
           // Mobile styles for active indicator
-          @media (max-width: 560px) {
+          @media (max-width: 650px) {
             &::before {
               left: -$spacing-lg; // Adjust for mobile padding
             }
@@ -365,7 +365,7 @@ const getIconSvg = (iconName: string) => {
     transition: opacity 0.3s ease;
 
     // Hide on mobile devices
-    @media (max-width: 560px) {
+    @media (max-width: 650px) {
       display: none;
     }
 
@@ -404,7 +404,7 @@ const getIconSvg = (iconName: string) => {
     gap: 20px;
 
     // Mobile styles - horizontal layout with icons only
-    @media (max-width: 560px) {
+    @media (max-width: 650px) {
       flex-direction: row;
       justify-content: center;
       gap: $spacing-md;
@@ -427,7 +427,7 @@ const getIconSvg = (iconName: string) => {
       color: $text-gray;
 
       // Mobile styles - square buttons with icons only
-      @media (max-width: 560px) {
+      @media (max-width: 650px) {
         width: 100%;
         height: 52px;
         padding: 0;
@@ -446,7 +446,7 @@ const getIconSvg = (iconName: string) => {
         flex-shrink: 0;
 
         // Mobile styles - adjust icon size
-        @media (max-width: 560px) {
+        @media (max-width: 650px) {
           width: 24px;
           height: 24px;
           margin-right: 0;
