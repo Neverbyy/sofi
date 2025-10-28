@@ -192,7 +192,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Excluded companies -->
-          <div class="form-group">
+          <div class="form-group excluded-companies">
             <div class="form-label-section">
               <label class="form-label">Компании-исключения</label>
               <p class="form-description optional">необязательно</p>
@@ -471,6 +471,18 @@ onUnmounted(() => {
 
           &:last-child {
             margin-bottom: 0;
+          }
+
+          // Скрываем секцию "Компании-исключения" на десктопе
+          &.excluded-companies {
+            display: none;
+
+            @media (max-width: 560px) {
+              display: flex;
+              flex-direction: column;
+              gap: $spacing-md;
+              margin-bottom: $spacing-xl;
+            }
           }
 
           .form-label-section {
