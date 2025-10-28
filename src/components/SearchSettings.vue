@@ -335,6 +335,18 @@ onUnmounted(() => {
           justify-content: center;
           border-radius: 12px;
           transition: all 0.3s ease;
+
+          &:hover {
+            background: #e5e7eb;
+          }
+
+          img {
+            transition: transform 0.3s ease;
+          }
+
+          &:hover img {
+            transform: translateX(-2px);
+          }
         }
 
         .settings-title {

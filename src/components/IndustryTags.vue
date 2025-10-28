@@ -8,7 +8,7 @@ interface Emits {
   (e: 'clear-all'): void
 }
 
-const props = defineProps<Props>()
+const { selectedIndustries } = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const handleRemoveIndustry = (industry: string) => {
@@ -22,7 +22,7 @@ const handleClearAll = () => {
 
 <template>
   <div class="industry-tags">
-    <p class="form-description">
+    <div class="form-description">
       Вы выбрали
       <div class="form-description__subtitle">
         <span class="industries-count">{{ selectedIndustries.length }} отраслей</span>
@@ -34,7 +34,7 @@ const handleClearAll = () => {
           @click="handleClearAll"
         />
       </div>
-    </p>
+    </div>
     <div class="selected-industries">
       <transition-group name="tag-fade" tag="div" class="tags-container">
         <span 

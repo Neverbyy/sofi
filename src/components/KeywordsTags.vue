@@ -14,6 +14,68 @@ const emit = defineEmits<Emits>()
 
 const inputValue = ref('')
 const keywordsList = ref<string[]>([])
+const showSuggestions = ref(false)
+const filteredSuggestions = ref<string[]>([])
+
+// Список популярных ключевых слов для подсказок
+const suggestions = ref([
+  // Технологии и языки программирования
+  'JavaScript', 'TypeScript', 'React', 'Vue', 'Angular', 'Node.js',
+  'Python', 'Java', 'C#', 'PHP', 'Ruby', 'Go', 'Rust',
+  'HTML', 'CSS', 'SCSS', 'SASS', 'Webpack', 'Vite',
+  
+  // Направления разработки
+  'Frontend', 'Backend', 'Full-stack', 'DevOps', 'QA', 'Testing',
+  'Фронтенд', 'Бэкенд', 'Фуллстек', 'ДевОпс', 'Тестирование',
+  
+  // Дизайн и UX
+  'UI/UX', 'Design', 'UI Design', 'UX Design', 'Web Design',
+  'UI/UX дизайн', 'Дизайн', 'Веб-дизайн', 'Интерфейс',
+  
+  // Менеджмент
+  'Product Manager', 'Project Manager', 'Product Owner', 'Scrum Master',
+  'Продакт-менеджер', 'Проджект-менеджер', 'Продакт-оунер', 'Скрам-мастер',
+  
+  // Аналитика и данные
+  'Data Analyst', 'Data Scientist', 'Machine Learning', 'AI', 'Analytics',
+  'Аналитик данных', 'Дата-сайентист', 'Машинное обучение', 'ИИ', 'Аналитика',
+  
+  // Мобильная разработка
+  'Mobile Developer', 'iOS', 'Android', 'Flutter', 'React Native',
+  'Мобильный разработчик', 'iOS разработчик', 'Android разработчик',
+  
+  // Разработка
+  'Web Developer', 'Software Engineer', 'Developer', 'Programmer',
+  'Веб-разработчик', 'Инженер-программист', 'Разработчик', 'Программист',
+  
+  // Системное администрирование
+  'System Administrator', 'Database Administrator', 'Security Engineer', 'Cloud Engineer',
+  'Системный администратор', 'Администратор БД', 'Инженер безопасности', 'Облачный инженер',
+  
+  // Маркетинг и продажи
+  'Sales Manager', 'Marketing Manager', 'Digital Marketing', 'SMM',
+  'Менеджер по продажам', 'Маркетинг-менеджер', 'Цифровой маркетинг', 'СММ',
+  
+  // HR и рекрутинг
+  'HR Manager', 'Recruiter', 'HR Specialist', 'Talent Acquisition',
+  'HR-менеджер', 'Рекрутер', 'HR-специалист', 'Поиск талантов',
+  
+  // Контент и SEO
+  'Content Manager', 'SMM Manager', 'SEO Specialist', 'Content Creator',
+  'Контент-менеджер', 'СММ-менеджер', 'SEO-специалист', 'Контент-мейкер',
+  
+  // Консалтинг и архитектура
+  'Consultant', 'Architect', 'Solution Architect', 'Technical Lead',
+  'Консультант', 'Архитектор', 'Архитектор решений', 'Техлид',
+  
+  // Уровни разработчиков
+  'Lead Developer', 'Team Lead', 'Senior Developer', 'Middle Developer', 'Junior Developer',
+  'Лид разработчик', 'Тимлид', 'Сеньор разработчик', 'Мидл разработчик', 'Джуниор разработчик',
+  
+  // Статусы работы
+  'Intern', 'Freelancer', 'Remote', 'Office', 'Hybrid',
+  'Стажер', 'Фрилансер', 'Удаленно', 'Офис', 'Гибрид'
+])
 
 // Парсим строку ключевых слов в массив
 const parseKeywords = (wordsString: string) => {
@@ -75,24 +137,80 @@ const handleInputChange = (event: Event) => {
         updateKeywordsString()
       }
       inputValue.value = ''
+      showSuggestions.value = false
     }
   } else {
     inputValue.value = value
+    filterSuggestions(value)
   }
+}
+
+const filterSuggestions = (query: string) => {
+  if (query.length < 2) {
+    showSuggestions.value = false
+    return
+  }
+  
+  const filtered = suggestions.value.filter(suggestion =>
+    suggestion.toLowerCase().includes(query.toLowerCase()) &&
+    !keywordsList.value.includes(suggestion)
+  )
+  
+  filteredSuggestions.value = filtered.slice(0, 8) // Показываем максимум 8 подсказок
+  showSuggestions.value = filtered.length > 0
+}
+
+const handleSelectSuggestion = (suggestion: string) => {
+  if (!keywordsList.value.includes(suggestion)) {
+    keywordsList.value.push(suggestion)
+    updateKeywordsString()
+  }
+  inputValue.value = ''
+  showSuggestions.value = false
+}
+
+const handleInputFocus = () => {
+  if (inputValue.value.length >= 2) {
+    filterSuggestions(inputValue.value)
+  }
+}
+
+const handleInputBlur = () => {
+  // Небольшая задержка, чтобы клик по подсказке успел сработать
+  setTimeout(() => {
+    showSuggestions.value = false
+  }, 150)
 }
 </script>
 
 <template>
   <div class="keywords-tags">
     <div class="input-container">
-      <input 
-        v-model="inputValue"
-        @input="handleInputChange"
-        @keypress="handleKeyPress"
-        type="text" 
-        class="form-input" 
-        placeholder="Ключевые слова, через запятую"
-      />
+      <div class="input-wrapper">
+        <input 
+          v-model="inputValue"
+          @input="handleInputChange"
+          @keypress="handleKeyPress"
+          @focus="handleInputFocus"
+          @blur="handleInputBlur"
+          type="text" 
+          class="form-input" 
+          placeholder="Ключевые слова, через запятую"
+        />
+        
+        <!-- Выпадающее окно с подсказками -->
+        <div v-if="showSuggestions" class="suggestions-dropdown">
+          <div 
+            v-for="suggestion in filteredSuggestions" 
+            :key="suggestion"
+            class="suggestion-item"
+            @mousedown="handleSelectSuggestion(suggestion)"
+          >
+            {{ suggestion }}
+          </div>
+        </div>
+      </div>
+      
       <div class="form-example">
         <span class="example-first">например,</span>
         <span class="example-second"> специалист по тестированию</span>
@@ -139,6 +257,10 @@ const handleInputChange = (event: Event) => {
     margin-bottom: $spacing-md;
   }
 
+  .input-wrapper {
+    position: relative;
+  }
+
   .form-input {
     width: 100%;
     background: #efefef;
@@ -151,6 +273,41 @@ const handleInputChange = (event: Event) => {
     &:focus {
       outline: none;
       border-color: $primary-blue;
+    }
+  }
+
+  .suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: $white;
+    border: 1px solid $border-gray;
+    border-radius: $border-radius;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 2px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+
+    .suggestion-item {
+      padding: $spacing-md $spacing-lg;
+      cursor: pointer;
+      transition: background-color $transition-fast;
+      font-size: $font-sm;
+      color: $text-primary;
+
+      &:hover {
+        background: $hover-gray;
+      }
+
+      &:first-child {
+        border-radius: $border-radius $border-radius 0 0;
+      }
+
+      &:last-child {
+        border-radius: 0 0 $border-radius $border-radius;
+      }
     }
   }
 
