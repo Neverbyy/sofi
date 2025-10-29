@@ -17,7 +17,7 @@ const handleClose = () => {
 
 <template>
   <transition name="dropdown-fade">
-    <div v-if="isOpen" class="notifications-dropdown">
+    <div v-if="props.isOpen" class="notifications-dropdown">
       <div class="notifications-header">
         <h3 class="notifications-title">Уведомления</h3>
         <button class="notifications-close" @click="handleClose">

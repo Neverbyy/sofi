@@ -28,10 +28,10 @@ export const exampleGetPositionPreferences = async (positionId: number) => {
 export const exampleUpdatePreferences = async (positionId: number) => {
   try {
     const newPreferences = {
-      keywords: 'Vue.js TypeScript',
+      keywords: ['Vue.js', 'TypeScript'],
       search_in_title: true,
       search_in_description: true,
-      exclude_words: 'junior стажер',
+      exclude_words: ['junior', 'стажер'],
       selected_industries: ['Программист, разработчик', 'Frontend Developer'],
       experience_level: 'middle'
     }
@@ -78,7 +78,13 @@ export const exampleFullWorkflow = async () => {
       return
     }
 
-    const positionId = positions.positions[0].position_id
+    const firstPosition = positions.positions[0]
+    if (!firstPosition) {
+      console.log('Позиция не найдена')
+      return
+    }
+    
+    const positionId = firstPosition.position_id
     console.log('Используем позицию с ID:', positionId)
 
     // 2. Получаем текущие настройки поиска
