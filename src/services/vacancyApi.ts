@@ -119,6 +119,9 @@ export interface ExperiencesResponse {
 
 // Конфигурация API
 // В development используем прокси через Vite, в production - прямой URL
+// ВАЖНО: Для работы на GitHub Pages нужно, чтобы бэкенд добавил CORS заголовки:
+// Access-Control-Allow-Origin: https://neverbyy.github.io
+// Access-Control-Allow-Credentials: true
 const isDevelopment = import.meta.env.DEV
 const API_BASE_URL = isDevelopment 
   ? '/api'  // Прокси через Vite в development
