@@ -16,6 +16,8 @@
             placeholder="your_email@example.com"
             required
             autocomplete="username"
+            :class="{ 'input-error': error && !username }"
+            @focus="error = ''"
           />
         </div>
         
@@ -28,11 +30,17 @@
             placeholder="Введите пароль"
             required
             autocomplete="current-password"
+            :class="{ 'input-error': error && !password }"
+            @focus="error = ''"
           />
         </div>
         
         <div v-if="error" class="error-message">
-          {{ error }}
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="error-icon">
+            <path d="M8 6V10M8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8C14 11.3137 11.3137 14 8 14Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M8 4H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>{{ error }}</span>
         </div>
         
         <button type="submit" :disabled="isLoading" class="login-button">
@@ -72,9 +80,39 @@ const handleLogin = async () => {
     // Успешная авторизация
     emit('success')
   } catch (err: any) {
-    error.value = err.message || 'Ошибка авторизации. Проверьте правильность данных.'
+    // Парсим ошибку и показываем понятное сообщение
+    let errorMessage = 'Ошибка авторизации. Проверьте правильность данных.'
+    
+    if (err.message) {
+      // Пытаемся извлечь детали из JSON ответа сервера
+      const match = err.message.match(/\{.*"detail":"([^"]+)"[^}]*\}/)
+      if (match && match[1]) {
+        const detail = match[1].toLowerCase()
+        
+        if (detail.includes('incorrect email') || detail.includes('incorrect password') || detail.includes('неверный')) {
+          errorMessage = 'Неверный email или пароль. Проверьте правильность введенных данных.'
+        } else if (detail.includes('invalid email')) {
+          errorMessage = 'Неверный формат email. Проверьте правильность введенного адреса.'
+        } else {
+          errorMessage = `Ошибка: ${match[1]}`
+        }
+      } else if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+        errorMessage = 'Неверный email или пароль. Проверьте правильность введенных данных.'
+      } else if (err.message.includes('400')) {
+        errorMessage = 'Ошибка при отправке данных. Проверьте правильность введенных данных.'
+      } else if (err.message.includes('Failed to fetch') || err.message.includes('Network')) {
+        errorMessage = 'Ошибка подключения к серверу. Проверьте подключение к интернету.'
+      } else {
+        // Если не удалось распарсить, показываем оригинальное сообщение, но более читаемо
+        errorMessage = err.message.replace(/Ошибка авторизации: \d+ - /, '')
+      }
+    }
+    
+    error.value = errorMessage
     // Очищаем credentials при ошибке
     setAuthCredentials('', '')
+    // Очищаем поле пароля для безопасности
+    password.value = ''
   } finally {
     isLoading.value = false
   }
@@ -153,6 +191,10 @@ const handleLogin = async () => {
       border-color: $primary-blue;
     }
     
+    &.input-error {
+      border-color: #f44;
+    }
+    
     &::placeholder {
       color: $text-secondary;
     }
@@ -166,6 +208,19 @@ const handleLogin = async () => {
   border-radius: 8px;
   color: #c33;
   font-size: $font-sm;
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  
+  .error-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  
+  span {
+    flex: 1;
+    line-height: 1.4;
+  }
 }
 
 .login-button {
