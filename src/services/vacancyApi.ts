@@ -123,7 +123,9 @@ export interface ExperiencesResponse {
 const API_BASE_URL = '/api'  // Используем относительный путь для работы через прокси (Vite в dev, Netlify в prod)
 
 // Credentials из переменных окружения
-// ВАЖНО: Всегда используйте .env файл для хранения чувствительных данных
+// ВАЖНО: Для production на Netlify нужно настроить переменные окружения:
+// VITE_AUTH_USERNAME и VITE_AUTH_PASSWORD в настройках Netlify (Site settings → Environment variables)
+// ВАЖНО: Всегда используйте .env файл для хранения чувствительных данных локально
 // НЕ коммитьте .env файл в git!
 const AUTH_CREDENTIALS = {
   username: import.meta.env.VITE_AUTH_USERNAME || '',
@@ -131,9 +133,15 @@ const AUTH_CREDENTIALS = {
   grant_type: 'password'
 }
 
-// Проверка наличия credentials
+// Проверка наличия credentials (более строгая проверка для production)
 if (!AUTH_CREDENTIALS.username || !AUTH_CREDENTIALS.password) {
-  console.warn('⚠️ ВНИМАНИЕ: Не заданы credentials для авторизации. Проверьте .env файл.')
+  const isProduction = import.meta.env.PROD
+  if (isProduction) {
+    console.error('❌ ОШИБКА: Не заданы credentials для авторизации в production!')
+    console.error('Настройте переменные окружения VITE_AUTH_USERNAME и VITE_AUTH_PASSWORD в Netlify')
+  } else {
+    console.warn('⚠️ ВНИМАНИЕ: Не заданы credentials для авторизации. Проверьте .env файл.')
+  }
 }
 
 // Кэш для отраслей
