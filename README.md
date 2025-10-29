@@ -2,74 +2,12 @@
 
 Vue.js приложение для работы с API Sofi Assistant.
 
-## Локальная разработка
-
-1. Установите зависимости:
-```bash
-npm install
-```
-
-2. Создайте файл `.env` в корне проекта:
-```env
-VITE_AUTH_USERNAME=your_email@example.com
-VITE_AUTH_PASSWORD=your_password
-VITE_API_BASE_URL=https://test.sofi-assistant.com/api
-```
-
-3. Запустите dev-сервер:
-```bash
-npm run dev
-```
-
-## Деплой на Netlify
-
-Приложение автоматически деплоится на Netlify при пуше в ветку `main`.
-
-### Настройка Netlify
-
-1. Подключите репозиторий к Netlify
-2. Настройки билда будут автоматически подхвачены из `netlify.toml`
-3. Приложение будет доступно по адресу Netlify (например: `https://your-app-name.netlify.app`)
-
-### ⚠️ Важно: Авторизация пользователей
+### ⚠️Важно: Авторизация пользователей
 
 При первом запуске приложения пользователь увидит форму авторизации, где нужно ввести свои данные для входа в систему:
 - Email
 - Пароль
-
-**Данные для авторизации нужно получить на [https://test.sofi-assistant.com](https://test.sofi-assistant.com)** - используйте те же учетные данные, что и на основном сайте.
-
-**Каждый пользователь вводит свои собственные данные** - они не хранятся в коде или настройках Netlify, только в sessionStorage браузера.
-
-### Ручной деплой
-
-```bash
-# Сборка для production
-npm run build
-
-# Предварительный просмотр
-npm run preview
-```
-
-## Деплой на GitHub Pages
-
-Приложение автоматически деплоится на GitHub Pages при пуше в ветку `main`.
-
-### Настройка GitHub Pages
-
-1. Перейдите в Settings → Pages вашего репозитория
-2. В разделе "Source" выберите "GitHub Actions"
-3. Приложение будет доступно по адресу: `https://yourusername.github.io/sofi/`
-
-### Ручной деплой
-
-```bash
-# Сборка для production
-npm run build
-
-# Предварительный просмотр
-npm run preview
-```
+**⚠️ ДЛЯ АВТОРИЗАЦИИ НУЖНО ИМЕТЬ ДОСТУП К Swagger API - [https://test.sofi-assistant.com/api/docs] - используйте те же учетные данные, что и на тестовом сайте Софи**
 
 ## Структура проекта
 
