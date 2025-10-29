@@ -1,8 +1,25 @@
 {
-  "hash": "62bd5ea0",
+  "hash": "6efc9eea",
   "configHash": "b8c56bb9",
-  "lockfileHash": "e3b0c442",
-  "browserHash": "515bfee5",
-  "optimized": {},
-  "chunks": {}
+  "lockfileHash": "c8d4344b",
+  "browserHash": "7cf1bcbf",
+  "optimized": {
+    "vue": {
+      "src": "../../node_modules/vue/dist/vue.runtime.esm-bundler.js",
+      "file": "vue.js",
+      "fileHash": "30861b04",
+      "needsInterop": false
+    },
+    "pinia": {
+      "src": "../../node_modules/pinia/dist/pinia.mjs",
+      "file": "pinia.js",
+      "fileHash": "730e5f65",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-CEBIFPJU": {
+      "file": "chunk-CEBIFPJU.js"
+    }
+  }
 }

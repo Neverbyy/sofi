@@ -122,23 +122,47 @@ export interface ExperiencesResponse {
 // Netlify прокси настроен в netlify.toml для перенаправления /api/* на https://test.sofi-assistant.com/api/*
 const API_BASE_URL = '/api'  // Используем относительный путь для работы через прокси (Vite в dev, Netlify в prod)
 
-// Credentials из переменных окружения
-// ВАЖНО: Для production на Netlify нужно настроить переменные окружения:
-// VITE_AUTH_USERNAME и VITE_AUTH_PASSWORD в настройках Netlify (Site settings → Environment variables)
-// ВАЖНО: Всегда используйте .env файл для хранения чувствительных данных локально
-// НЕ коммитьте .env файл в git!
-const AUTH_CREDENTIALS = {
-  username: import.meta.env.VITE_AUTH_USERNAME || '',
-  password: import.meta.env.VITE_AUTH_PASSWORD || '',
-  grant_type: 'password'
+// Credentials из переменных окружения или localStorage
+// ВАЖНО: В production credentials должны вводиться пользователем через форму авторизации
+// Локально можно использовать .env файл для разработки
+const getAuthCredentials = (): { username: string; password: string } => {
+  // В development используем .env файл
+  if (import.meta.env.DEV) {
+    return {
+      username: import.meta.env.VITE_AUTH_USERNAME || '',
+      password: import.meta.env.VITE_AUTH_PASSWORD || ''
+    }
+  }
+  
+  // В production используем данные из sessionStorage (вводит пользователь)
+  const storedUsername = sessionStorage.getItem('sofi_auth_username')
+  const storedPassword = sessionStorage.getItem('sofi_auth_password')
+  
+  return {
+    username: storedUsername || '',
+    password: storedPassword || ''
+  }
 }
+
+// Метод для установки credentials (вызывается из формы авторизации)
+export const setAuthCredentials = (username: string, password: string): void => {
+  sessionStorage.setItem('sofi_auth_username', username)
+  sessionStorage.setItem('sofi_auth_password', password)
+}
+
+// Метод для очистки credentials
+export const clearAuthCredentials = (): void => {
+  sessionStorage.removeItem('sofi_auth_username')
+  sessionStorage.removeItem('sofi_auth_password')
+}
+
+const AUTH_CREDENTIALS = getAuthCredentials()
 
 // Проверка наличия credentials (более строгая проверка для production)
 if (!AUTH_CREDENTIALS.username || !AUTH_CREDENTIALS.password) {
   const isProduction = import.meta.env.PROD
   if (isProduction) {
-    console.error('❌ ОШИБКА: Не заданы credentials для авторизации в production!')
-    console.error('Настройте переменные окружения VITE_AUTH_USERNAME и VITE_AUTH_PASSWORD в Netlify')
+    console.warn('⚠️ Credentials не найдены. Пользователь должен авторизоваться через форму.')
   } else {
     console.warn('⚠️ ВНИМАНИЕ: Не заданы credentials для авторизации. Проверьте .env файл.')
   }
@@ -179,18 +203,56 @@ class VacancyApiService {
     this.isAuthenticated = false
   }
 
-  // Проверка авторизации: пытаемся использовать существующие cookies
+  // Проверка авторизации: сначала пытаемся использовать существующие cookies
   // Если cookies недействительны, выполняем авторизацию через /auth/login
   private async authenticate(): Promise<void> {
     if (this.isAuthenticated) {
       return
     }
 
-    // Выполняем авторизацию через /auth/login
-    // Отправляем оригинальные данные из .env (бэкенд не поддерживает расшифровку)
+    // Сначала пытаемся проверить, есть ли у нас рабочие cookies
+    // Делаем простой запрос для проверки авторизации
     try {
-      // Используем оригинальные credentials из .env
-      const formData = this.encodeFormData(AUTH_CREDENTIALS)
+      const testResponse = await fetch(`${this.baseUrl}/positions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      })
+
+      // Если запрос успешен (200-299), значит cookies уже есть и работают
+      if (testResponse.ok) {
+        this.isAuthenticated = true
+        safeLog('Авторизация проверена: cookies уже установлены')
+        return
+      }
+
+      // Если получили 401/403, нужно авторизоваться
+      if (testResponse.status === 401 || testResponse.status === 403) {
+        safeLog('Cookies недействительны, требуется авторизация')
+        // Продолжаем выполнение ниже для выполнения /auth/login
+      }
+    } catch (error) {
+      // Если произошла ошибка сети, все равно попробуем авторизоваться
+      safeLog('Ошибка проверки авторизации, выполняем авторизацию')
+    }
+
+    // Получаем актуальные credentials (могут быть обновлены пользователем)
+    const credentials = getAuthCredentials()
+    
+    if (!credentials.username || !credentials.password) {
+      // Если credentials отсутствуют, выбрасываем ошибку
+      // Это должно обрабатываться на уровне UI - показать форму авторизации
+      throw new Error('Credentials not found. Please login through the authorization form.')
+    }
+
+    // Выполняем авторизацию через /auth/login
+    try {
+      const formData = this.encodeFormData({
+        ...credentials,
+        grant_type: 'password'
+      })
       
       const response = await fetch(`${this.baseUrl}/auth/login`, {
         method: 'POST',
