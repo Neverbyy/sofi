@@ -9,7 +9,7 @@ interface Emits {
   (e: 'close-mobile-menu'): void
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isMobileMenuOpen: false
 })
 
@@ -29,6 +29,10 @@ const menuItems = [
 
 const handleMenuClick = (itemId: string) => {
   activeItem.value = itemId
+  // Закрываем мобильное меню при клике на элемент навигации
+  if (props.isMobileMenuOpen) {
+    emit('close-mobile-menu')
+  }
 }
 
 const handleCollapseToggle = () => {
@@ -73,7 +77,7 @@ const getIconSvg = (iconName: string) => {
           @click="handleMenuClick(item.id)"
         >
           <div class="nav-icon" v-html="getIconSvg(item.icon)"></div>
-          <span class="nav-label" v-if="!isCollapsed">{{ item.label }}</span>
+          <span class="nav-label" v-if="!isCollapsed || isMobileMenuOpen">{{ item.label }}</span>
         </li>
       </ul>
     </nav>
@@ -104,11 +108,11 @@ const getIconSvg = (iconName: string) => {
     <div class="bottom-buttons">
       <button class="bottom-btn">
         <img src="/src/assets/img/instr.png" alt="Instructions" class="btn-icon" />
-        <span v-if="!isCollapsed && !isMobileMenuOpen">Инструкция</span>
+        <span class="btn-label" v-if="!isCollapsed">Инструкция</span>
       </button>
       <button class="bottom-btn">
         <img src="/src/assets/img/support.png" alt="Support" class="btn-icon" />
-        <span v-if="!isCollapsed && !isMobileMenuOpen">Поддержка</span>
+        <span class="btn-label" v-if="!isCollapsed">Поддержка</span>
       </button>
       <button class="bottom-btn mobile-only" v-if="isMobileMenuOpen">
         <svg data-v-fa3d55be="" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path data-v-fa3d55be="" d="M11.4668 18.3057H3.99168C3.5332 18.3057 3.16113 17.9336 3.16113 17.4751V2.52492C3.16113 2.06645 3.53324 1.69438 3.99168 1.69438H11.4668C11.9261 1.69438 12.2973 1.32313 12.2973 0.863828C12.2973 0.404531 11.9261 0.0332031 11.4668 0.0332031H3.99168C2.61793 0.0332031 1.5 1.15117 1.5 2.52492V17.4751C1.5 18.8488 2.61793 19.9668 3.99168 19.9668H11.4668C11.9261 19.9668 12.2973 19.5955 12.2973 19.1362C12.2973 18.6769 11.9261 18.3057 11.4668 18.3057Z" fill="#131313"></path><path data-v-fa3d55be="" d="M18.2525 9.40855L13.2027 4.42515C12.8771 4.10288 12.3505 4.10706 12.0282 4.43347C11.706 4.75988 11.7093 5.28562 12.0366 5.60788L15.6454 9.16933H5.97508C5.51578 9.16933 5.14453 9.54058 5.14453 9.99988C5.14453 10.4592 5.51578 10.8305 5.97508 10.8305H15.6454L12.0366 14.3919C11.7093 14.7142 11.7068 15.2399 12.0282 15.5663C12.1055 15.6447 12.1976 15.707 12.2991 15.7494C12.4006 15.7919 12.5096 15.8138 12.6196 15.8138C12.8306 15.8138 13.0415 15.7341 13.2027 15.5746L18.2525 10.5912C18.3308 10.5139 18.393 10.4218 18.4355 10.3203C18.478 10.2188 18.4999 10.1099 18.5 9.99984C18.5 9.77734 18.4111 9.56554 18.2525 9.40855Z" fill="#131313"></path></svg>
@@ -137,7 +141,7 @@ const getIconSvg = (iconName: string) => {
     left: 0;
     right: 0;
     bottom: 0;
-    width: 100vw;
+    width: 100vw !important; // Всегда полная ширина на мобильных, игнорируем collapsed
     height: 100vh;
     z-index: 1000;
     padding: 0;
@@ -151,6 +155,11 @@ const getIconSvg = (iconName: string) => {
 
   &.collapsed {
     width: $sidebar-collapsed-width;
+
+    // На мобильных устройствах collapsed не должен влиять на ширину
+    @media (max-width: 650px) {
+      width: 100vw !important;
+    }
   }
 
   .collapse-btn {
@@ -253,6 +262,7 @@ const getIconSvg = (iconName: string) => {
     // Mobile styles
     @media (max-width: 650px) {
       padding: $spacing-lg;
+      padding-top: 80px; // Компенсируем высоту хедера
       overflow: visible; // На мобильных устройствах разрешаем видимость
     }
 
@@ -333,16 +343,38 @@ const getIconSvg = (iconName: string) => {
     .nav-menu {
       padding: 0 $spacing-sm;
 
+      // На мобильных устройствах используем стандартные стили, игнорируем collapsed
+      @media (max-width: 650px) {
+        padding: $spacing-lg;
+        padding-top: 80px; // Компенсируем высоту хедера
+      }
+
       .nav-item {
         justify-content: center;
         padding: $spacing-md;
 
+        // На мобильных устройствах возвращаем стандартное выравнивание и отступы
+        @media (max-width: 650px) {
+          justify-content: flex-start;
+          padding: $spacing-md $spacing-lg;
+        }
+
         .nav-icon {
           margin-right: 0;
+
+          // На мобильных устройствах возвращаем стандартный отступ
+          @media (max-width: 650px) {
+            margin-right: $spacing-md;
+          }
         }
 
         &.active::before {
           left: -$spacing-sm;
+
+          // На мобильных устройствах используем стандартную позицию индикатора
+          @media (max-width: 650px) {
+            left: -$spacing-lg;
+          }
         }
       }
     }
@@ -350,9 +382,19 @@ const getIconSvg = (iconName: string) => {
     .bottom-buttons {
       padding: 0 $spacing-sm;
 
+      // На мобильных устройствах используем стандартные стили
+      @media (max-width: 650px) {
+        padding: $spacing-lg;
+      }
+
       .bottom-btn {
         justify-content: center;
         padding: $spacing-md;
+
+        // На мобильных устройствах возвращаем стандартное выравнивание
+        @media (max-width: 650px) {
+          justify-content: center;
+        }
       }
     }
   }
@@ -450,6 +492,13 @@ const getIconSvg = (iconName: string) => {
           width: 24px;
           height: 24px;
           margin-right: 0;
+        }
+      }
+
+      .btn-label {
+        // Скрываем текст на мобильных устройствах
+        @media (max-width: 650px) {
+          display: none;
         }
       }
     }

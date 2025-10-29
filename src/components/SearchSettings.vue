@@ -1,44 +1,68 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useSearchSettingsStore } from '../stores/searchSettings'
+import type { Experience } from '../services/vacancyApi'
 import IndustryModal from './IndustryModal.vue'
 import IndustryTags from './IndustryTags.vue'
 import ExcludeWordsTags from './ExcludeWordsTags.vue'
 import KeywordsTags from './KeywordsTags.vue'
+import SaveNotification from './SaveNotification.vue'
 
-const keywords = ref('')
-const searchInTitle = ref(true)
-const searchInDescription = ref(false)
-const excludeWords = ref('')
-const selectedIndustries = ref([
-  'Аналитик',
-  'Гейм-дизайнер', 
-  'Дизайнер, художник',
-  'Менеджер продукта',
-  'Программист, разработчик',
-  'Продуктовый аналитик',
-  'Сетевой инженер'
-])
-const experienceLevel = ref('')
+// Используем Pinia store
+const searchSettingsStore = useSearchSettingsStore()
+
+// Локальные состояния для UI
 const isSelectOpen = ref(false)
 const isModalOpen = ref(false)
+const experiences = ref<Experience[]>([])
+const isLoadingExperiences = ref(false)
+const experiencesError = ref<string | null>(null)
 
-const handleSave = () => {
-  console.log('Saving settings...')
-}
+// Загрузка уровней опыта из API
+const loadExperiences = async (): Promise<void> => {
+  if (experiences.value.length > 0) {
+    return // Уже загружены
+  }
 
-const handleFindVacancies = () => {
-  console.log('Finding vacancies...')
-}
+  if (isLoadingExperiences.value) {
+    return // Уже загружается
+  }
 
-const handleRemoveIndustry = (industry: string) => {
-  const index = selectedIndustries.value.indexOf(industry)
-  if (index > -1) {
-    selectedIndustries.value.splice(index, 1)
+  isLoadingExperiences.value = true
+  experiencesError.value = null
+
+  try {
+    console.log('Начинаем загрузку уровней опыта...')
+    const loadedExperiences = await searchSettingsStore.getExperiences()
+    console.log('Уровни опыта загружены:', loadedExperiences)
+    experiences.value = loadedExperiences
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Ошибка при загрузке уровней опыта'
+    experiencesError.value = errorMessage
+    console.error('Ошибка при загрузке уровней опыта:', error)
+  } finally {
+    isLoadingExperiences.value = false
+    console.log('Загрузка уровней опыта завершена')
   }
 }
 
+// Загружаем настройки из localStorage при монтировании компонента
+onMounted(() => {
+  searchSettingsStore.loadSettings()
+  loadExperiences()
+})
+
+const handleSave = async () => {
+  // Сохраняем настройки в localStorage и через API через store с анимацией
+  await searchSettingsStore.saveSettings()
+}
+
+const handleRemoveIndustry = (industry: string) => {
+  searchSettingsStore.removeIndustry(industry)
+}
+
 const handleClearAllIndustries = () => {
-  selectedIndustries.value = []
+  searchSettingsStore.clearAllIndustries()
 }
 
 const handleOpenModal = () => {
@@ -50,34 +74,71 @@ const handleCloseModal = () => {
 }
 
 const handleUpdateKeywords = (words: string) => {
-  keywords.value = words
+  searchSettingsStore.updateKeywords(words)
 }
 
 const handleUpdateExcludeWords = (words: string) => {
-  excludeWords.value = words
+  searchSettingsStore.updateExcludeWords(words)
 }
 
 const handleUpdateSelectedIndustries = (industries: string[]) => {
-  selectedIndustries.value = industries
+  searchSettingsStore.updateSelectedIndustries(industries)
 }
 
 const handleSelectToggle = () => {
   isSelectOpen.value = !isSelectOpen.value
 }
 
-const handleSelectOption = (value: string) => {
-  experienceLevel.value = value
+// Маппинг ID уровня опыта на отображаемое название
+const experienceDisplayMap: Record<string, string> = {
+  'noExperience': 'Нет опыта',
+  'between1And3': 'Junior',
+  'between3And6': 'Middle',
+  'moreThan6': 'Senior'
+}
+
+const handleSelectOption = (experienceId: string) => {
+  searchSettingsStore.updateExperienceLevel(experienceId)
   isSelectOpen.value = false
 }
 
 const getExperienceText = (value: string) => {
-  const options = {
-    'no-experience': 'Без опыта',
-    'junior': 'Junior (1-3 года)',
-    'middle': 'Middle (3-5 лет)',
-    'senior': 'Senior (5+ лет)'
+  if (!value) {
+    return 'Выберите уровень опыта'
   }
-  return options[value as keyof typeof options] || 'Выберите уровень опыта'
+  
+  // Используем маппинг для преобразования ID в название
+  if (experienceDisplayMap[value]) {
+    return experienceDisplayMap[value]
+  }
+  
+  // Если нет в маппинге, ищем в загруженных данных
+  const experience = experiences.value.find(exp => exp.id === value || exp.name === value)
+  if (experience) {
+    return experience.name
+  }
+  
+  // Fallback на старые значения для обратной совместимости
+  const fallbackOptions: Record<string, string> = {
+    'no-experience': 'Нет опыта',
+    'junior': 'Junior',
+    'middle': 'Middle',
+    'senior': 'Senior'
+  }
+  return fallbackOptions[value] || 'Выберите уровень опыта'
+}
+
+// Получение отображаемого названия для опыта
+const getExperienceDisplayName = (experienceId: string): string => {
+  return experienceDisplayMap[experienceId] || experienceId
+}
+
+// Форматирование числа с разделителями тысяч
+const formatNumber = (num: number): string => {
+  if (num === undefined || num === null) {
+    return '0'
+  }
+  return num.toLocaleString('ru-RU')
 }
 
 const handleClickOutside = (event: Event) => {
@@ -132,25 +193,27 @@ onUnmounted(() => {
             </div>
             <div class="form-control-section">
               <KeywordsTags 
-                :keywords="keywords"
+                :keywords="searchSettingsStore.settings.keywords"
                 @update:keywords="handleUpdateKeywords"
               />
               <div class="checkbox-group">
                 <div class="checkbox-label-text">Искать</div>
                 <label class="checkbox-label">
                   <input 
-                    v-model="searchInTitle"
+                    v-model="searchSettingsStore.settings.searchInTitle"
                     type="checkbox" 
                     class="checkbox-input"
+                    @change="searchSettingsStore.updateSearchSettings(searchSettingsStore.settings.searchInTitle, searchSettingsStore.settings.searchInDescription)"
                   />
                   <span class="checkbox-custom"></span>
                   в названии вакансии
                 </label>
                 <label class="checkbox-label">
                   <input 
-                    v-model="searchInDescription"
+                    v-model="searchSettingsStore.settings.searchInDescription"
                     type="checkbox" 
                     class="checkbox-input"
+                    @change="searchSettingsStore.updateSearchSettings(searchSettingsStore.settings.searchInTitle, searchSettingsStore.settings.searchInDescription)"
                   />
                   <span class="checkbox-custom"></span>
                   в описании вакансии
@@ -169,7 +232,7 @@ onUnmounted(() => {
             </div>
             <div class="form-control-section">
               <ExcludeWordsTags 
-                :exclude-words="excludeWords"
+                :exclude-words="searchSettingsStore.settings.excludeWords"
                 @update:exclude-words="handleUpdateExcludeWords"
               />
             </div>
@@ -183,7 +246,7 @@ onUnmounted(() => {
             </div>
             <div class="form-control-section">
               <IndustryTags 
-                :selected-industries="selectedIndustries"
+                :selected-industries="searchSettingsStore.settings.selectedIndustries"
                 @remove-industry="handleRemoveIndustry"
                 @clear-all="handleClearAllIndustries"
               />
@@ -225,7 +288,7 @@ onUnmounted(() => {
                   @click="handleSelectToggle"
                 >
                   <span class="select-text">
-                    {{ experienceLevel ? getExperienceText(experienceLevel) : 'Выберите уровень опыта' }}
+                    {{ searchSettingsStore.settings.experienceLevel ? getExperienceText(searchSettingsStore.settings.experienceLevel) : 'Выберите уровень опыта' }}
                   </span>
                   <img 
                     src="/src/assets/img/arrow.png" 
@@ -237,40 +300,68 @@ onUnmounted(() => {
                 
                 <div class="dropdown-menu" :class="{ open: isSelectOpen, 'position-top': true }">
                   <div 
-                    class="dropdown-item" 
-                    @click="handleSelectOption('')"
-                    :class="{ active: experienceLevel === '' }"
+                    v-if="isLoadingExperiences"
+                    class="dropdown-item loading"
                   >
-                    Выберите уровень опыта
+                    Загрузка...
                   </div>
                   <div 
-                    class="dropdown-item" 
-                    @click="handleSelectOption('no-experience')"
-                    :class="{ active: experienceLevel === 'no-experience' }"
+                    v-else-if="experiencesError"
+                    class="dropdown-item error"
                   >
-                    Без опыта
+                    Ошибка: {{ experiencesError }}
                   </div>
-                  <div 
-                    class="dropdown-item" 
-                    @click="handleSelectOption('junior')"
-                    :class="{ active: experienceLevel === 'junior' }"
-                  >
-                    Junior (1-3 года)
-                  </div>
-                  <div 
-                    class="dropdown-item" 
-                    @click="handleSelectOption('middle')"
-                    :class="{ active: experienceLevel === 'middle' }"
-                  >
-                    Middle (3-5 лет)
-                  </div>
-                  <div 
-                    class="dropdown-item" 
-                    @click="handleSelectOption('senior')"
-                    :class="{ active: experienceLevel === 'senior' }"
-                  >
-                    Senior (5+ лет)
-                  </div>
+                  <template v-else>
+                    <div 
+                      class="dropdown-item" 
+                      @click="handleSelectOption('')"
+                      :class="{ active: searchSettingsStore.settings.experienceLevel === '' || !searchSettingsStore.settings.experienceLevel }"
+                    >
+                      Выберите уровень опыта
+                    </div>
+                    <template v-if="experiences.length > 0">
+                      <div 
+                        v-for="experience in experiences"
+                        :key="experience.id"
+                        class="dropdown-item" 
+                        @click="handleSelectOption(experience.id)"
+                        :class="{ active: searchSettingsStore.settings.experienceLevel === experience.id }"
+                      >
+                        {{ getExperienceDisplayName(experience.id) }}
+                      </div>
+                    </template>
+                    <template v-else>
+                      <!-- Fallback опции если данные не загрузились -->
+                      <div 
+                        class="dropdown-item" 
+                        @click="handleSelectOption('noExperience')"
+                        :class="{ active: searchSettingsStore.settings.experienceLevel === 'noExperience' }"
+                      >
+                        Нет опыта
+                      </div>
+                      <div 
+                        class="dropdown-item" 
+                        @click="handleSelectOption('between1And3')"
+                        :class="{ active: searchSettingsStore.settings.experienceLevel === 'between1And3' }"
+                      >
+                        Junior
+                      </div>
+                      <div 
+                        class="dropdown-item" 
+                        @click="handleSelectOption('between3And6')"
+                        :class="{ active: searchSettingsStore.settings.experienceLevel === 'between3And6' }"
+                      >
+                        Middle
+                      </div>
+                      <div 
+                        class="dropdown-item" 
+                        @click="handleSelectOption('moreThan6')"
+                        :class="{ active: searchSettingsStore.settings.experienceLevel === 'moreThan6' }"
+                      >
+                        Senior
+                      </div>
+                    </template>
+                  </template>
                 </div>
               </div>
             </div>
@@ -279,13 +370,28 @@ onUnmounted(() => {
 
         <!-- Action buttons -->
         <div class="form-actions">
-          <button @click="handleSave" class="save-btn">
-            <img src="/src/assets/img/save.png" alt="Save" class="btn-icon" />
-            Сохранить
+          <button @click="handleSave" class="save-btn" :disabled="searchSettingsStore.isLoading && searchSettingsStore.isManualSave">
+            <div v-if="searchSettingsStore.isLoading && searchSettingsStore.isManualSave" class="spinner"></div>
+            <img v-else src="/src/assets/img/save.png" alt="Save" class="btn-icon" />
+            {{ searchSettingsStore.isLoading && searchSettingsStore.isManualSave ? 'Сохранение...' : 'Сохранить' }}
           </button>
-          <button @click="handleFindVacancies" class="find-btn">
-            Найдено вакансий:
-          </button>
+          <div class="vacancies-count">
+            <span class="vacancies-text">Найдено вакансий:</span>
+            <span v-if="searchSettingsStore.isApiLoading" class="loading-spinner">
+              <span class="spinner-dot"></span>
+              <span class="spinner-dot"></span>
+              <span class="spinner-dot"></span>
+            </span>
+            <span v-else class="vacancies-number">
+              {{ formatNumber(searchSettingsStore.totalVacancies) }}
+            </span>
+          </div>
+        </div>
+        
+        <!-- API Error Notification -->
+        <div v-if="searchSettingsStore.apiError" class="api-error">
+          <p>Ошибка API: {{ searchSettingsStore.apiError }}</p>
+          <button @click="searchSettingsStore.clearApiError" class="close-error-btn">×</button>
         </div>
       </div>
     </div>
@@ -293,10 +399,13 @@ onUnmounted(() => {
     <!-- Modal for industry selection -->
     <IndustryModal 
       :is-open="isModalOpen"
-      :selected-industries="selectedIndustries"
+      :selected-industries="searchSettingsStore.settings.selectedIndustries"
       @close="handleCloseModal"
       @update:selected-industries="handleUpdateSelectedIndustries"
     />
+
+    <!-- Save notification -->
+    <SaveNotification :is-visible="searchSettingsStore.showSaveNotification" />
   </main>
 </template>
 
@@ -729,7 +838,14 @@ onUnmounted(() => {
           font-size: $font-sm;
           font-weight: 500;
           cursor: pointer;
-          transition: background-color $transition-fast;
+          transition: all $transition-fast;
+          position: relative;
+          min-height: 40px;
+
+          &:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+          }
 
           // Tablet styles
           @media (max-width: 1100px) {
@@ -790,6 +906,105 @@ onUnmounted(() => {
           .btn-icon {
             width: $icon-sm;
             height: $icon-sm;
+          }
+        }
+
+        .vacancies-count {
+          display: flex;
+          align-items: center;
+          gap: $spacing-md;
+          padding: $spacing-md $spacing-lg;
+          justify-content: center;
+          background: $white;
+          border: 1px solid $primary-blue;
+          border-radius: 999px; // Pill-shaped
+          font-size: $font-sm;
+          font-weight: 500;
+          color: $text-primary;
+
+          .vacancies-text {
+            color: $text-primary;
+            white-space: nowrap;
+          }
+
+          .vacancies-number {
+            color: $text-primary;
+            font-weight: 600;
+          }
+
+          .loading-spinner {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+
+            .spinner-dot {
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background: $primary-blue;
+              animation: spinner-bounce 1.4s ease-in-out infinite both;
+
+              &:nth-child(1) {
+                animation-delay: -0.32s;
+              }
+
+              &:nth-child(2) {
+                animation-delay: -0.16s;
+              }
+
+              &:nth-child(3) {
+                animation-delay: 0s;
+              }
+            }
+          }
+
+          @keyframes spinner-bounce {
+            0%, 80%, 100% {
+              transform: scale(0);
+              opacity: 0.5;
+            }
+            40% {
+              transform: scale(1);
+              opacity: 1;
+            }
+          }
+        }
+
+        .api-error {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: $spacing-md;
+          padding: $spacing-md $spacing-lg;
+          background: #fee;
+          border: 1px solid #fcc;
+          border-radius: $border-radius;
+          color: #c33;
+
+          p {
+            margin: 0;
+            font-size: $font-sm;
+          }
+
+          .close-error-btn {
+            background: none;
+            border: none;
+            color: #c33;
+            font-size: $font-lg;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color $transition-fast;
+
+            &:hover {
+              background: rgba(204, 51, 51, 0.1);
+            }
           }
         }
       }
@@ -971,6 +1186,21 @@ onUnmounted(() => {
       }
     }
   }
+}
+
+// Стили для спиннера
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid $white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 </style>

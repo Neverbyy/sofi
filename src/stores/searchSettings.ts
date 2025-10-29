@@ -1,0 +1,374 @@
+import { defineStore } from 'pinia'
+import { ref, watch } from 'vue'
+import { vacancyApiService } from '../services/vacancyApi'
+import type { Industry, Experience } from '../services/vacancyApi'
+
+// Функция для маскирования чувствительных данных в логах
+const maskSensitiveData = (data: any): any => {
+  if (!data || typeof data !== 'object') return data
+  
+  const masked = { ...data }
+  
+  // Маскируем email
+  if (masked.email) {
+    const email = masked.email.toString()
+    const [localPart, domain] = email.split('@')
+    if (localPart && domain) {
+      const maskedLocal = localPart.length > 2 
+        ? localPart.substring(0, 2) + '*'.repeat(localPart.length - 2)
+        : localPart
+      masked.email = `${maskedLocal}@${domain}`
+    }
+  }
+  
+  // Маскируем user_id (показываем только первые 8 символов)
+  if (masked.user_id) {
+    const userId = masked.user_id.toString()
+    masked.user_id = userId.length > 8 
+      ? userId.substring(0, 8) + '...'
+      : userId
+  }
+  
+  return masked
+}
+
+export interface SearchSettings {
+  keywords: string
+  searchInTitle: boolean
+  searchInDescription: boolean
+  excludeWords: string
+  selectedIndustries: string[]
+  experienceLevel: string
+}
+
+export const useSearchSettingsStore = defineStore('searchSettings', () => {
+  // Состояние
+  const settings = ref<SearchSettings>({
+    keywords: '',
+    searchInTitle: true,
+    searchInDescription: false,
+    excludeWords: '',
+    selectedIndustries: [
+      'Аналитик',
+      'Гейм-дизайнер', 
+      'Дизайнер, художник',
+      'Менеджер продукта',
+      'Программист, разработчик',
+      'Продуктовый аналитик',
+      'Сетевой инженер'
+    ],
+    experienceLevel: ''
+  })
+
+  // Состояния для UI
+  const isLoading = ref(false)
+  const showSaveNotification = ref(false)
+  const isManualSave = ref(false)
+  
+  // Состояния для API
+  const totalVacancies = ref<number>(0)
+  const isApiLoading = ref(false)
+  const apiError = ref<string | null>(null)
+  const currentPositionId = ref<number | null>(null)
+
+  // Ключ для localStorage
+  const STORAGE_KEY = 'sofi-search-settings'
+
+  // Загрузка настроек из localStorage
+  const loadSettings = (): void => {
+    try {
+      const savedSettings = localStorage.getItem(STORAGE_KEY)
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings)
+        settings.value = { ...settings.value, ...parsedSettings }
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке настроек из localStorage:', error)
+    }
+  }
+
+  // Автоматическое сохранение без анимации
+  const autoSave = (): void => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings.value))
+    } catch (error) {
+      console.error('Ошибка при автоматическом сохранении:', error)
+    }
+  }
+
+  // Получение position_id пользователя
+  const getPositionId = async (): Promise<number> => {
+    if (currentPositionId.value) {
+      return currentPositionId.value
+    }
+
+    try {
+      const positionsResponse = await vacancyApiService.getPositions()
+      
+      if (positionsResponse.positions.length === 0) {
+        throw new Error('У пользователя нет позиций')
+      }
+
+      const firstPosition = positionsResponse.positions[0]
+      if (!firstPosition) {
+        throw new Error('Не найдена ни одна позиция')
+      }
+
+      currentPositionId.value = firstPosition.position_id
+      return currentPositionId.value
+    } catch (error) {
+      console.error('Ошибка при получении position_id:', error)
+      throw error
+    }
+  }
+
+  // Получение списка отраслей из API
+  const getIndustries = async (): Promise<Industry[]> => {
+    try {
+      const industries = await vacancyApiService.getIndustries()
+      console.log('Store: отрасли получены из API:', industries)
+      return industries
+    } catch (error) {
+      console.error('Store: ошибка при получении списка отраслей:', error)
+      throw error // Пробрасываем ошибку дальше
+    }
+  }
+
+  // Получение списка уровней опыта из API
+  const getExperiences = async (): Promise<Experience[]> => {
+    try {
+      const experiences = await vacancyApiService.getExperiences()
+      console.log('Store: уровни опыта получены из API:', experiences)
+      return experiences
+    } catch (error) {
+      console.error('Store: ошибка при получении списка уровней опыта:', error)
+      throw error // Пробрасываем ошибку дальше
+    }
+  }
+
+  // Ручное сохранение с анимацией и синхронизацией с API
+  const saveSettings = async (): Promise<void> => {
+    isManualSave.value = true
+    isLoading.value = true
+    isApiLoading.value = true
+    showSaveNotification.value = false
+    apiError.value = null
+    
+    try {
+      // Сохраняем в localStorage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings.value))
+      console.log('Настройки сохранены в localStorage')
+      
+      // Получаем position_id
+      const positionId = await getPositionId()
+      
+      // Функция для преобразования строки в массив
+      const stringToArray = (str: string): string[] => {
+        if (!str || str.trim() === '') {
+          return []
+        }
+        return str
+          .split(',')
+          .flatMap(part => part.split(/\s+/))
+          .map(item => item.trim())
+          .filter(item => item.length > 0)
+      }
+      
+      // Преобразуем настройки в формат API (отрасли будут преобразованы в API сервисе)
+      const preferences = {
+        keywords: stringToArray(settings.value.keywords),
+        search_in_title: settings.value.searchInTitle,
+        search_in_description: settings.value.searchInDescription,
+        exclude_words: stringToArray(settings.value.excludeWords),
+        selected_industries: settings.value.selectedIndustries, // Передаём как есть, преобразование в API
+        experience_level: settings.value.experienceLevel
+      }
+      
+      // Сохраняем настройки через API
+      await vacancyApiService.updatePositionPreferences(positionId, preferences)
+      console.log('Настройки сохранены в API')
+      
+      // Получаем количество вакансий после сохранения
+      try {
+        const vacanciesResponse = await vacancyApiService.getTotalVacancies(positionId, preferences)
+        console.log('Ответ getTotalVacancies (store):', maskSensitiveData(vacanciesResponse))
+        
+        // Обрабатываем разные форматы ответа
+        let count = 0
+        if (typeof vacanciesResponse === 'number') {
+          count = vacanciesResponse
+        } else if (vacanciesResponse && typeof vacanciesResponse === 'object') {
+          const response = vacanciesResponse as any
+          count = response.total_vacancies || response.total || response.count || 0
+        }
+        
+        totalVacancies.value = count
+        console.log('Количество вакансий сохранено в store:', totalVacancies.value)
+        console.log('Тип значения:', typeof totalVacancies.value)
+      } catch (error) {
+        console.warn('Не удалось получить количество вакансий:', error)
+        totalVacancies.value = 0
+      }
+      
+      // Показываем уведомление о сохранении
+      showSaveNotification.value = true
+      
+      // Скрываем уведомление через 3 секунды
+      setTimeout(() => {
+        showSaveNotification.value = false
+      }, 3000)
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка при сохранении настроек'
+      apiError.value = errorMessage
+      console.error('Ошибка при сохранении настроек:', error)
+    } finally {
+      isLoading.value = false
+      isManualSave.value = false
+      isApiLoading.value = false
+    }
+  }
+
+  // Обновление настроек
+  const updateSettings = (newSettings: Partial<SearchSettings>): void => {
+    settings.value = { ...settings.value, ...newSettings }
+  }
+
+  // Обновление ключевых слов
+  const updateKeywords = (keywords: string): void => {
+    settings.value.keywords = keywords
+  }
+
+  // Обновление исключаемых слов
+  const updateExcludeWords = (excludeWords: string): void => {
+    settings.value.excludeWords = excludeWords
+  }
+
+  // Обновление выбранных отраслей
+  const updateSelectedIndustries = (industries: string[]): void => {
+    settings.value.selectedIndustries = industries
+  }
+
+  // Удаление отрасли
+  const removeIndustry = (industry: string): void => {
+    const index = settings.value.selectedIndustries.indexOf(industry)
+    if (index > -1) {
+      settings.value.selectedIndustries.splice(index, 1)
+    }
+  }
+
+  // Очистка всех отраслей
+  const clearAllIndustries = (): void => {
+    settings.value.selectedIndustries = []
+  }
+
+  // Обновление уровня опыта
+  const updateExperienceLevel = (level: string): void => {
+    settings.value.experienceLevel = level
+  }
+
+  // Обновление настроек поиска
+  const updateSearchSettings = (searchInTitle: boolean, searchInDescription: boolean): void => {
+    settings.value.searchInTitle = searchInTitle
+    settings.value.searchInDescription = searchInDescription
+  }
+
+  // Сброс настроек к значениям по умолчанию
+  const resetSettings = (): void => {
+    settings.value = {
+      keywords: '',
+      searchInTitle: true,
+      searchInDescription: false,
+      excludeWords: '',
+      selectedIndustries: [
+        'Аналитик',
+        'Гейм-дизайнер', 
+        'Дизайнер, художник',
+        'Менеджер продукта',
+        'Программист, разработчик',
+        'Продуктовый аналитик',
+        'Сетевой инженер'
+      ],
+      experienceLevel: ''
+    }
+  }
+
+  // Получение количества вакансий через API
+  const fetchVacanciesCount = async (): Promise<void> => {
+    isApiLoading.value = true
+    apiError.value = null
+    
+    try {
+      const count = await vacancyApiService.getVacanciesCount(settings.value)
+      console.log('Количество вакансий получено:', count)
+      totalVacancies.value = count || 0
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка API'
+      apiError.value = errorMessage
+      console.error('Ошибка при получении количества вакансий:', error)
+      totalVacancies.value = 0
+    } finally {
+      isApiLoading.value = false
+    }
+  }
+
+  // Синхронизация настроек с API
+  const syncWithApi = async (): Promise<void> => {
+    isApiLoading.value = true
+    apiError.value = null
+    
+    try {
+      await fetchVacanciesCount()
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка синхронизации с API'
+      apiError.value = errorMessage
+      console.error('Ошибка при синхронизации с API:', error)
+    } finally {
+      isApiLoading.value = false
+    }
+  }
+
+  // Очистка ошибки API
+  const clearApiError = (): void => {
+    apiError.value = null
+  }
+
+  // Автоматическое сохранение при изменении настроек (без анимации)
+  watch(
+    settings,
+    () => {
+      autoSave()
+    },
+    { deep: true }
+  )
+
+  return {
+    // Состояние
+    settings,
+    isLoading,
+    showSaveNotification,
+    isManualSave,
+    totalVacancies,
+    isApiLoading,
+    apiError,
+    
+    // Методы
+    loadSettings,
+    saveSettings,
+    autoSave,
+    updateSettings,
+    updateKeywords,
+    updateExcludeWords,
+    updateSelectedIndustries,
+    removeIndustry,
+    clearAllIndustries,
+    updateExperienceLevel,
+    updateSearchSettings,
+    resetSettings,
+    fetchVacanciesCount,
+    syncWithApi,
+    clearApiError,
+    getIndustries,
+    getExperiences
+  }
+})
