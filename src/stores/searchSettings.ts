@@ -48,15 +48,7 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
     searchInTitle: true,
     searchInDescription: false,
     excludeWords: '',
-    selectedIndustries: [
-      'Аналитик',
-      'Гейм-дизайнер', 
-      'Дизайнер, художник',
-      'Менеджер продукта',
-      'Программист, разработчик',
-      'Продуктовый аналитик',
-      'Сетевой инженер'
-    ],
+    selectedIndustries: [], // По умолчанию пустой массив
     experienceLevel: ''
   })
 
@@ -74,14 +66,53 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
   // Ключ для localStorage
   const STORAGE_KEY = 'sofi-search-settings'
 
+  // Старые дефолтные значения отраслей (для миграции)
+  const OLD_DEFAULT_INDUSTRIES = [
+    'Аналитик',
+    'Гейм-дизайнер', 
+    'Дизайнер, художник',
+    'Менеджер продукта',
+    'Программист, разработчик',
+    'Продуктовый аналитик',
+    'Сетевой инженер'
+  ]
+
+  // Проверка, являются ли отрасли старыми дефолтными значениями
+  const isOldDefaultIndustries = (industries: string[]): boolean => {
+    if (!industries || industries.length === 0) return false
+    if (industries.length !== OLD_DEFAULT_INDUSTRIES.length) return false
+    
+    // Проверяем, что все отрасли соответствуют старым дефолтным значениям
+    const sortedSaved = [...industries].sort()
+    const sortedOld = [...OLD_DEFAULT_INDUSTRIES].sort()
+    return JSON.stringify(sortedSaved) === JSON.stringify(sortedOld)
+  }
+
   // Загрузка настроек из localStorage
   const loadSettings = (): void => {
     try {
       const savedSettings = localStorage.getItem(STORAGE_KEY)
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings)
-        settings.value = { ...settings.value, ...parsedSettings }
+        
+        // Миграция: если selectedIndustries содержат старые дефолтные значения,
+        // очищаем их (предполагаем, что пользователь еще не выбирал отрасли вручную)
+        let selectedIndustries = parsedSettings.selectedIndustries || []
+        if (isOldDefaultIndustries(selectedIndustries)) {
+          selectedIndustries = []
+          // Сохраняем очищенные данные обратно в localStorage
+          parsedSettings.selectedIndustries = []
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsedSettings))
+        }
+        
+        const defaultSettings = {
+          ...settings.value,
+          ...parsedSettings,
+          selectedIndustries: selectedIndustries
+        }
+        settings.value = defaultSettings
       }
+      // Если сохраненных настроек нет, settings.value остается с дефолтными значениями (пустой массив)
     } catch (error) {
       console.error('Ошибка при загрузке настроек из localStorage:', error)
     }
@@ -280,15 +311,7 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
       searchInTitle: true,
       searchInDescription: false,
       excludeWords: '',
-      selectedIndustries: [
-        'Аналитик',
-        'Гейм-дизайнер', 
-        'Дизайнер, художник',
-        'Менеджер продукта',
-        'Программист, разработчик',
-        'Продуктовый аналитик',
-        'Сетевой инженер'
-      ],
+      selectedIndustries: [], // По умолчанию пустой массив
       experienceLevel: ''
     }
   }
