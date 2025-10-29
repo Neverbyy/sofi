@@ -4,11 +4,16 @@ interface Props {
 }
 
 interface Emits {
+  (e: 'remove-industry', industry: string): void
   (e: 'clear-all'): void
 }
 
 const { selectedIndustries } = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const handleRemoveIndustry = (industry: string) => {
+  emit('remove-industry', industry)
+}
 
 const handleClearAll = () => {
   emit('clear-all')
@@ -30,7 +35,24 @@ const handleClearAll = () => {
         />
       </div>
     </div>
-    <!-- Убираем отображение тегов по умолчанию -->
+    <!-- Отображаем теги только если есть выбранные отрасли -->
+    <div v-if="selectedIndustries.length > 0" class="selected-industries">
+      <transition-group name="tag-fade" tag="div" class="tags-container">
+        <span 
+          v-for="industry in selectedIndustries" 
+          :key="industry"
+          class="industry-tag"
+        >
+          {{ industry }}
+          <img 
+            src="/src/assets/img/close.png" 
+            alt="Remove" 
+            class="remove-icon"
+            @click="handleRemoveIndustry(industry)"
+          />
+        </span>
+      </transition-group>
+    </div>
   </div>
 </template>
 
@@ -69,6 +91,97 @@ const handleClearAll = () => {
     }
   }
 
-  // Убираем стили для selected-industries, так как теги больше не отображаются
+  .selected-industries {
+    margin-bottom: $spacing-lg;
+    max-height: 150px;
+    overflow-y: auto;
+    
+    // Стилизация скроллбара
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-sm;
+      padding-right: 8px;
+
+      // Mobile styles
+      @media (max-width: 560px) {
+        gap: $spacing-xs;
+        padding-right: 4px;
+      }
+    }
+
+    // Анимация для transition-group
+    .tag-fade-enter-active,
+    .tag-fade-leave-active {
+      transition: all 0.3s ease;
+    }
+
+    .tag-fade-enter-from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+
+    .tag-fade-leave-to {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+
+    .tag-fade-move {
+      transition: transform 0.3s ease;
+    }
+
+    .industry-tag {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      padding: $spacing-sm $spacing-md;
+      background: $light-gray;
+      border-radius: $border-radius-xl;
+      font-size: $font-sm;
+      color: $text-gray;
+
+      // Mobile styles
+      @media (max-width: 560px) {
+        padding: $spacing-xs $spacing-sm;
+        font-size: $font-xs;
+        gap: $spacing-xs;
+      }
+
+      .remove-icon {
+        width: $icon-sm;
+        height: $icon-sm;
+        cursor: pointer;
+        opacity: 0.6;
+
+        // Mobile styles
+        @media (max-width: 560px) {
+          width: $icon-xs;
+          height: $icon-xs;
+        }
+
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+  }
 }
 </style>
