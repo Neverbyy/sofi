@@ -1,53 +1,3 @@
-// Функция для маскирования чувствительных данных в логах
-const maskSensitiveData = (data: any): any => {
-  if (!data || typeof data !== 'object') return data
-  
-  const masked = { ...data }
-  
-  // Маскируем email
-  if (masked.email) {
-    const email = masked.email.toString()
-    const [localPart, domain] = email.split('@')
-    if (localPart && domain) {
-      const maskedLocal = localPart.length > 2 
-        ? localPart.substring(0, 2) + '*'.repeat(localPart.length - 2)
-        : localPart
-      masked.email = `${maskedLocal}@${domain}`
-    }
-  }
-  
-  // Маскируем user_id (показываем только первые 8 символов)
-  if (masked.user_id) {
-    const userId = masked.user_id.toString()
-    masked.user_id = userId.length > 8 
-      ? userId.substring(0, 8) + '...'
-      : userId
-  }
-  
-  // Маскируем telegram
-  if (masked.telegram) {
-    const telegram = masked.telegram.toString()
-    masked.telegram = telegram.length > 3 
-      ? telegram.substring(0, 3) + '*'.repeat(telegram.length - 3)
-      : telegram
-  }
-  
-  return masked
-}
-
-// Проверка на production режим
-const isProduction = import.meta.env.PROD
-
-// Безопасное логирование (только в development)
-const safeLog = (message: string, data?: any) => {
-  if (!isProduction) {
-    if (data) {
-      console.log(message, maskSensitiveData(data))
-    } else {
-      console.log(message)
-    }
-  }
-}
 
 // Примечание: Шифрование убрано, так как бэкенд не поддерживает расшифровку
 // Данные отправляются в открытом виде, но хранятся в .env файле (не в коде)
@@ -156,18 +106,6 @@ export const clearAuthCredentials = (): void => {
   sessionStorage.removeItem('sofi_auth_password')
 }
 
-const AUTH_CREDENTIALS = getAuthCredentials()
-
-// Проверка наличия credentials (более строгая проверка для production)
-if (!AUTH_CREDENTIALS.username || !AUTH_CREDENTIALS.password) {
-  const isProduction = import.meta.env.PROD
-  if (isProduction) {
-    console.warn('⚠️ Credentials не найдены. Пользователь должен авторизоваться через форму.')
-  } else {
-    console.warn('⚠️ ВНИМАНИЕ: Не заданы credentials для авторизации. Проверьте .env файл.')
-  }
-}
-
 // Кэш для отраслей
 let industriesCache: Industry[] | null = null
 
@@ -224,18 +162,15 @@ class VacancyApiService {
       // Если запрос успешен (200-299), значит cookies уже есть и работают
       if (testResponse.ok) {
         this.isAuthenticated = true
-        safeLog('Авторизация проверена: cookies уже установлены')
         return
       }
 
       // Если получили 401/403, нужно авторизоваться
       if (testResponse.status === 401 || testResponse.status === 403) {
-        safeLog('Cookies недействительны, требуется авторизация')
         // Продолжаем выполнение ниже для выполнения /auth/login
       }
     } catch (error) {
       // Если произошла ошибка сети, все равно попробуем авторизоваться
-      safeLog('Ошибка проверки авторизации, выполняем авторизацию')
     }
 
     // Получаем актуальные credentials (могут быть обновлены пользователем)
@@ -272,10 +207,8 @@ class VacancyApiService {
       // Авторизация успешна, cookies установлены автоматически браузером
       // Важно: НЕ читаем response.json() - это предотвратит показ данных в DevTools
       this.isAuthenticated = true
-      safeLog('Авторизация выполнена, cookies установлены')
     } catch (error) {
       this.resetAuth()
-      console.error('Ошибка при авторизации:', error)
       throw error
     }
   }
@@ -304,7 +237,6 @@ class VacancyApiService {
 
       return await response.json()
     } catch (error) {
-      console.error('Ошибка при получении позиций:', error)
       throw error
     }
   }
@@ -325,7 +257,6 @@ class VacancyApiService {
 
       return await response.json()
     } catch (error) {
-      console.error('Ошибка при получении настроек поиска:', error)
       throw error
     }
   }
@@ -353,7 +284,6 @@ class VacancyApiService {
 
       return await response.json()
     } catch (error) {
-      console.error('Ошибка при обновлении настроек поиска:', error)
       throw error
     }
   }
@@ -374,7 +304,6 @@ class VacancyApiService {
 
       return await response.json()
     } catch (error) {
-      console.error('Ошибка при переключении режима ручного запроса:', error)
       throw error
     }
   }
@@ -414,7 +343,6 @@ class VacancyApiService {
       }
 
       const data = await response.json()
-      console.log('Ответ getTotalVacancies (сырой):', data)
       
       // Обрабатываем разные форматы ответа
       let result: TotalVacanciesResponse
@@ -444,17 +372,14 @@ class VacancyApiService {
           position_id: data.position_id || positionId
         }
       } else {
-        console.warn('Неожиданный формат ответа getTotalVacancies:', data)
         result = {
           total_vacancies: 0,
           position_id: positionId
         }
       }
       
-      console.log('Обработанный результат getTotalVacancies:', result)
       return result
     } catch (error) {
-      console.error('Ошибка при получении количества вакансий:', error)
       throw error
     }
   }
@@ -487,7 +412,6 @@ class VacancyApiService {
       }
 
       const data = await response.json()
-      console.log('Ответ API /industries:', data)
       
       // Проверяем различные форматы ответа
       let industries: Industry[] = []
@@ -502,15 +426,12 @@ class VacancyApiService {
         // Если ответ - объект с полем data
         industries = data.data
       } else {
-        console.warn('Неожиданный формат ответа API:', data)
         industries = []
       }
       
       industriesCache = industries
-      console.log('Загружено отраслей:', industries.length)
       return industries
     } catch (error) {
-      console.error('Ошибка при получении списка отраслей:', error)
       throw error
     }
   }
@@ -535,7 +456,6 @@ class VacancyApiService {
       }
 
       const data = await response.json()
-      console.log('Ответ API /positions/experiences:', data)
       
       // Проверяем различные форматы ответа
       let experiences: Experience[] = []
@@ -574,15 +494,12 @@ class VacancyApiService {
           experiences = data.data
         }
       } else {
-        console.warn('Неожиданный формат ответа API:', data)
         experiences = []
       }
       
       experiencesCache = experiences
-      console.log('Загружено уровней опыта:', experiences.length)
       return experiences
     } catch (error) {
-      console.error('Ошибка при получении списка уровней опыта:', error)
       throw error
     }
   }
@@ -600,7 +517,6 @@ class VacancyApiService {
         return industry ? industry.id : industryName
       })
     } catch (error) {
-      console.error('Ошибка при преобразовании отраслей:', error)
       // Возвращаем исходные названия в случае ошибки
       return industries
     }
@@ -632,9 +548,7 @@ class VacancyApiService {
       }
 
       await this.updatePositionPreferences(positionId, preferences)
-      console.log('Настройки поиска синхронизированы с API')
     } catch (error) {
-      console.error('Ошибка при синхронизации настроек с API:', error)
       throw error
     }
   }
@@ -646,7 +560,6 @@ class VacancyApiService {
       const positionsResponse = await this.getPositions()
       
       if (positionsResponse.positions.length === 0) {
-        console.warn('У пользователя нет позиций')
         return 0
       }
 
@@ -665,7 +578,6 @@ class VacancyApiService {
       
       return vacanciesResponse.total_vacancies
     } catch (error) {
-      console.error('Ошибка при получении количества вакансий:', error)
       throw error
     }
   }

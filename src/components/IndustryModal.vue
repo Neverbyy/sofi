@@ -35,17 +35,13 @@ const loadIndustries = async (): Promise<void> => {
   industriesError.value = null
 
   try {
-    console.log('Начинаем загрузку отраслей...')
     const industries = await searchSettingsStore.getIndustries()
-    console.log('Отрасли загружены:', industries)
     allIndustries.value = industries
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Ошибка при загрузке отраслей'
     industriesError.value = errorMessage
-    console.error('Ошибка при загрузке отраслей:', error)
   } finally {
     isLoadingIndustries.value = false
-    console.log('Загрузка завершена')
   }
 }
 

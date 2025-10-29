@@ -32,17 +32,13 @@ const loadExperiences = async (): Promise<void> => {
   experiencesError.value = null
 
   try {
-    console.log('Начинаем загрузку уровней опыта...')
     const loadedExperiences = await searchSettingsStore.getExperiences()
-    console.log('Уровни опыта загружены:', loadedExperiences)
     experiences.value = loadedExperiences
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Ошибка при загрузке уровней опыта'
     experiencesError.value = errorMessage
-    console.error('Ошибка при загрузке уровней опыта:', error)
   } finally {
     isLoadingExperiences.value = false
-    console.log('Загрузка уровней опыта завершена')
   }
 }
 

@@ -6,10 +6,9 @@ import { vacancyApiService } from '../services/vacancyApi'
 export const exampleGetPositions = async () => {
   try {
     const positions = await vacancyApiService.getPositions()
-    console.log('Позиции пользователя:', positions)
     return positions
   } catch (error) {
-    console.error('Ошибка при получении позиций:', error)
+    // Ошибка при получении позиций
   }
 }
 
@@ -17,10 +16,9 @@ export const exampleGetPositions = async () => {
 export const exampleGetPositionPreferences = async (positionId: number) => {
   try {
     const preferences = await vacancyApiService.getPositionPreferences(positionId)
-    console.log('Настройки поиска для позиции', positionId, ':', preferences)
     return preferences
   } catch (error) {
-    console.error('Ошибка при получении настроек поиска:', error)
+    // Ошибка при получении настроек поиска
   }
 }
 
@@ -37,10 +35,9 @@ export const exampleUpdatePreferences = async (positionId: number) => {
     }
 
     const updatedPreferences = await vacancyApiService.updatePositionPreferences(positionId, newPreferences)
-    console.log('Обновленные настройки:', updatedPreferences)
     return updatedPreferences
   } catch (error) {
-    console.error('Ошибка при обновлении настроек:', error)
+    // Ошибка при обновлении настроек
   }
 }
 
@@ -48,10 +45,9 @@ export const exampleUpdatePreferences = async (positionId: number) => {
 export const exampleToggleManualQuery = async (positionId: number) => {
   try {
     const result = await vacancyApiService.toggleManualQuery(positionId)
-    console.log('Режим ручного запроса:', result.manual_query_enabled ? 'включен' : 'выключен')
     return result
   } catch (error) {
-    console.error('Ошибка при переключении режима ручного запроса:', error)
+    // Ошибка при переключении режима ручного запроса
   }
 }
 
@@ -59,33 +55,27 @@ export const exampleToggleManualQuery = async (positionId: number) => {
 export const exampleGetTotalVacancies = async (positionId: number) => {
   try {
     const result = await vacancyApiService.getTotalVacancies(positionId)
-    console.log('Общее количество вакансий для позиции', positionId, ':', result.total_vacancies)
     return result
   } catch (error) {
-    console.error('Ошибка при получении количества вакансий:', error)
+    // Ошибка при получении количества вакансий
   }
 }
 
 // Пример 6: Полный цикл работы с API
 export const exampleFullWorkflow = async () => {
   try {
-    console.log('=== Начало полного цикла работы с API ===')
-    
     // 1. Получаем все позиции
     const positions = await exampleGetPositions()
     if (!positions || positions.positions.length === 0) {
-      console.log('У пользователя нет позиций')
       return
     }
 
     const firstPosition = positions.positions[0]
     if (!firstPosition) {
-      console.log('Позиция не найдена')
       return
     }
     
     const positionId = firstPosition.position_id
-    console.log('Используем позицию с ID:', positionId)
 
     // 2. Получаем текущие настройки поиска
     await exampleGetPositionPreferences(positionId)
@@ -98,21 +88,17 @@ export const exampleFullWorkflow = async () => {
 
     // 5. Переключаем режим ручного запроса
     await exampleToggleManualQuery(positionId)
-
-    console.log('=== Полный цикл работы с API завершен ===')
   } catch (error) {
-    console.error('Ошибка в полном цикле работы с API:', error)
+    // Ошибка в полном цикле работы с API
   }
 }
 
 // Пример 7: Использование с настройками из store
 export const exampleWithStoreSettings = async (storeSettings: any) => {
   try {
-    console.log('Получение количества вакансий на основе настроек из store...')
     const count = await vacancyApiService.getVacanciesCount(storeSettings)
-    console.log('Найдено вакансий:', count)
     return count
   } catch (error) {
-    console.error('Ошибка при получении количества вакансий:', error)
+    // Ошибка при получении количества вакансий
   }
 }

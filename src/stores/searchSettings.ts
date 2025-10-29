@@ -3,35 +3,6 @@ import { ref, watch } from 'vue'
 import { vacancyApiService } from '../services/vacancyApi'
 import type { Industry, Experience } from '../services/vacancyApi'
 
-// Функция для маскирования чувствительных данных в логах
-const maskSensitiveData = (data: any): any => {
-  if (!data || typeof data !== 'object') return data
-  
-  const masked = { ...data }
-  
-  // Маскируем email
-  if (masked.email) {
-    const email = masked.email.toString()
-    const [localPart, domain] = email.split('@')
-    if (localPart && domain) {
-      const maskedLocal = localPart.length > 2 
-        ? localPart.substring(0, 2) + '*'.repeat(localPart.length - 2)
-        : localPart
-      masked.email = `${maskedLocal}@${domain}`
-    }
-  }
-  
-  // Маскируем user_id (показываем только первые 8 символов)
-  if (masked.user_id) {
-    const userId = masked.user_id.toString()
-    masked.user_id = userId.length > 8 
-      ? userId.substring(0, 8) + '...'
-      : userId
-  }
-  
-  return masked
-}
-
 export interface SearchSettings {
   keywords: string
   searchInTitle: boolean
@@ -114,7 +85,7 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
       }
       // Если сохраненных настроек нет, settings.value остается с дефолтными значениями (пустой массив)
     } catch (error) {
-      console.error('Ошибка при загрузке настроек из localStorage:', error)
+      // Ошибка при загрузке настроек из localStorage
     }
   }
 
@@ -123,7 +94,7 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings.value))
     } catch (error) {
-      console.error('Ошибка при автоматическом сохранении:', error)
+      // Ошибка при автоматическом сохранении
     }
   }
 
@@ -148,7 +119,6 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
       currentPositionId.value = firstPosition.position_id
       return currentPositionId.value
     } catch (error) {
-      console.error('Ошибка при получении position_id:', error)
       throw error
     }
   }
@@ -157,10 +127,8 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
   const getIndustries = async (): Promise<Industry[]> => {
     try {
       const industries = await vacancyApiService.getIndustries()
-      console.log('Store: отрасли получены из API:', industries)
       return industries
     } catch (error) {
-      console.error('Store: ошибка при получении списка отраслей:', error)
       throw error // Пробрасываем ошибку дальше
     }
   }
@@ -169,10 +137,8 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
   const getExperiences = async (): Promise<Experience[]> => {
     try {
       const experiences = await vacancyApiService.getExperiences()
-      console.log('Store: уровни опыта получены из API:', experiences)
       return experiences
     } catch (error) {
-      console.error('Store: ошибка при получении списка уровней опыта:', error)
       throw error // Пробрасываем ошибку дальше
     }
   }
@@ -188,7 +154,6 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
     try {
       // Сохраняем в localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings.value))
-      console.log('Настройки сохранены в localStorage')
       
       // Получаем position_id
       const positionId = await getPositionId()
@@ -217,12 +182,10 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
       
       // Сохраняем настройки через API
       await vacancyApiService.updatePositionPreferences(positionId, preferences)
-      console.log('Настройки сохранены в API')
       
       // Получаем количество вакансий после сохранения
       try {
         const vacanciesResponse = await vacancyApiService.getTotalVacancies(positionId, preferences)
-        console.log('Ответ getTotalVacancies (store):', maskSensitiveData(vacanciesResponse))
         
         // Обрабатываем разные форматы ответа
         let count = 0
@@ -234,10 +197,7 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
         }
         
         totalVacancies.value = count
-        console.log('Количество вакансий сохранено в store:', totalVacancies.value)
-        console.log('Тип значения:', typeof totalVacancies.value)
       } catch (error) {
-        console.warn('Не удалось получить количество вакансий:', error)
         totalVacancies.value = 0
       }
       
@@ -252,7 +212,6 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка при сохранении настроек'
       apiError.value = errorMessage
-      console.error('Ошибка при сохранении настроек:', error)
     } finally {
       isLoading.value = false
       isManualSave.value = false
@@ -323,12 +282,10 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
     
     try {
       const count = await vacancyApiService.getVacanciesCount(settings.value)
-      console.log('Количество вакансий получено:', count)
       totalVacancies.value = count || 0
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка API'
       apiError.value = errorMessage
-      console.error('Ошибка при получении количества вакансий:', error)
       totalVacancies.value = 0
     } finally {
       isApiLoading.value = false
@@ -345,7 +302,6 @@ export const useSearchSettingsStore = defineStore('searchSettings', () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка синхронизации с API'
       apiError.value = errorMessage
-      console.error('Ошибка при синхронизации с API:', error)
     } finally {
       isApiLoading.value = false
     }
