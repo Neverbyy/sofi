@@ -10,8 +10,8 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
-  // Настройка для GitHub Pages
-  base: process.env.NODE_ENV === 'production' ? '/sofi/' : '/',
+  // Настройка для Netlify (без префикса пути)
+  base: '/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
